@@ -1,4 +1,5 @@
 import json
+import os
 import sys
 import tempfile
 import unittest
@@ -43,7 +44,7 @@ class EngineTests(unittest.TestCase):
                 mock.patch.object(sys, "executable", str(install_root / "DLForge.exe")),
                 mock.patch("dlforge.engine.app_root", return_value=install_root / "_internal"),
             ):
-                self.assertEqual(tool_path("yt-dlp"), str(executable))
+                self.assertTrue(os.path.samefile(tool_path("yt-dlp"), executable))
 
     @unittest.skipUnless(sys.platform == "win32", "Windows process-tree behavior")
     def test_cancel_terminates_the_whole_process_tree(self):
