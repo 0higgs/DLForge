@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.5.0 - 2026-08-02
+
+- Added a guided Windows installer with Start menu and optional desktop shortcuts.
+- Added a fully offline installer containing yt-dlp, FFmpeg, and ffprobe.
+- Kept all media tools private to DLForge, without requiring Python or changing PATH.
+- Added complete uninstall cleanup for installer-managed tools.
+
 ## v0.4.0 - 2026-08-02
 
 - Reworked the interface so the primary download controls remain visible.

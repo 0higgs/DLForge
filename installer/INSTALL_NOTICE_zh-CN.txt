@@ -1,0 +1,10 @@
+DLForge 离线安装说明
+
+此安装程序已包含 DLForge 桌面应用和以下固定版本的运行组件，安装过程中不需要连接互联网：
+
+- yt-dlp 2026.07.04
+- FFmpeg / ffprobe 8.1.2 essentials build（Gyan.dev）
+
+这些组件仅保存在 DLForge 自己的程序目录中，不会安装 Python，也不会修改系统 PATH。卸载 DLForge 时这些组件会一并移除。
+
+DLForge 自有源码使用 MIT License。yt-dlp、FFmpeg 及其构建保留各自许可证。请仅下载你有权保存的内容，并遵守目标网站服务条款及所在地法律。

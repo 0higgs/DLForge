@@ -33,5 +33,9 @@ Pillow
   Project: https://python-pillow.github.io/
   License: HPND
 
+Inno Setup Chinese Simplified Translation
+  Project: https://github.com/kira-96/Inno-Setup-Chinese-Simplified-Translation
+  License: MIT License
+
 DLForge is not affiliated with yt-dlp, FFmpeg, Gyan.dev, or any supported website.
 The MIT license for DLForge does not relicense any third-party component.

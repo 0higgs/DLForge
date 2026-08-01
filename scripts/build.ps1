@@ -1,11 +1,17 @@
+param(
+    [switch]$WithoutTools
+)
+
 $ErrorActionPreference = "Stop"
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $toolsDir = Join-Path $projectRoot "tools"
 $required = @("yt-dlp.exe", "ffmpeg.exe", "ffprobe.exe")
-foreach ($name in $required) {
-    if (-not (Test-Path -LiteralPath (Join-Path $toolsDir $name))) {
-        throw "Missing tools/$name. Run scripts/prepare_tools.ps1 first."
+if (-not $WithoutTools) {
+    foreach ($name in $required) {
+        if (-not (Test-Path -LiteralPath (Join-Path $toolsDir $name))) {
+            throw "Missing tools/$name. Run scripts/prepare_tools.ps1 first."
+        }
     }
 }
 
@@ -39,21 +45,27 @@ if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $customTkRoot)) {
 
 Push-Location $projectRoot
 try {
-    python -m PyInstaller --noconfirm --clean --windowed --onedir --name DLForge `
-        --hidden-import tkinter `
-        --runtime-hook "scripts\pyi_rth_tkinter.py" `
-        --add-data "tools;tools" `
-        --add-data "$customTkRoot;customtkinter" `
-        --add-data "$tkinterPackage;tkinter" `
-        --add-data "$tclLibrary;_tcl_data" `
-        --add-data "$tkLibrary;_tk_data" `
-        --add-data "$tclPackages;tcl8" `
-        --add-binary "$tkinterBinary;." `
-        --add-binary "$tclBinary;." `
-        --add-binary "$tkBinary;." `
-        app.py
+    $pyInstallerArgs = @(
+        "--noconfirm", "--clean", "--windowed", "--onedir", "--name", "DLForge",
+        "--hidden-import", "tkinter",
+        "--runtime-hook", "scripts\pyi_rth_tkinter.py",
+        "--add-data", "$customTkRoot;customtkinter",
+        "--add-data", "$tkinterPackage;tkinter",
+        "--add-data", "$tclLibrary;_tcl_data",
+        "--add-data", "$tkLibrary;_tk_data",
+        "--add-data", "$tclPackages;tcl8",
+        "--add-binary", "$tkinterBinary;.",
+        "--add-binary", "$tclBinary;.",
+        "--add-binary", "$tkBinary;."
+    )
+    if (-not $WithoutTools) {
+        $pyInstallerArgs += @("--add-data", "tools;tools")
+    }
+    $pyInstallerArgs += "app.py"
+    python -m PyInstaller @pyInstallerArgs
     if ($LASTEXITCODE -ne 0) { throw "PyInstaller build failed." }
     Copy-Item -LiteralPath (Join-Path $projectRoot "README.md") -Destination (Join-Path $projectRoot "dist\DLForge") -Force
+    Copy-Item -LiteralPath (Join-Path $projectRoot "LICENSE") -Destination (Join-Path $projectRoot "dist\DLForge") -Force
     Copy-Item -LiteralPath (Join-Path $projectRoot "THIRD_PARTY_NOTICES.txt") -Destination (Join-Path $projectRoot "dist\DLForge") -Force
     $workDir = Join-Path $projectRoot "build"
     if (Test-Path -LiteralPath $workDir) {

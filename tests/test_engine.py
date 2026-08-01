@@ -31,6 +31,20 @@ class EngineTests(unittest.TestCase):
                 with self.assertRaises(FileNotFoundError):
                     tool_path("yt-dlp")
 
+    def test_frozen_app_finds_installer_managed_tools(self):
+        with tempfile.TemporaryDirectory() as directory:
+            install_root = Path(directory)
+            tools = install_root / "tools"
+            tools.mkdir()
+            executable = tools / "yt-dlp.exe"
+            executable.touch()
+            with (
+                mock.patch.object(sys, "frozen", True, create=True),
+                mock.patch.object(sys, "executable", str(install_root / "DLForge.exe")),
+                mock.patch("dlforge.engine.app_root", return_value=install_root / "_internal"),
+            ):
+                self.assertEqual(tool_path("yt-dlp"), str(executable))
+
     @unittest.skipUnless(sys.platform == "win32", "Windows process-tree behavior")
     def test_cancel_terminates_the_whole_process_tree(self):
         process = mock.Mock(pid=43210)

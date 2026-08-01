@@ -52,6 +52,16 @@ powershell -ExecutionPolicy Bypass -File .\scripts\package.ps1
 
 当前 FFmpeg 来源为 Gyan.dev 的 release essentials 静态构建，该构建启用了 GPLv3。公开分发包含该构建的 Windows 压缩包时，发布者必须同时满足 GPLv3 对许可文本和对应源码的要求。DLForge 仓库的 MIT 许可不会取代任何第三方许可证。
 
+## 构建 Windows 离线安装器
+
+安装 [Inno Setup 6.7 或更高版本](https://jrsoftware.org/isdl.php) 后运行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\build_installer.ps1
+```
+
+生成文件为 `release\DLForge-0.5.0-Setup-offline.exe`。安装包内置固定版本的 yt-dlp、FFmpeg 和 ffprobe，并安装到 DLForge 私有目录。目标电脑无需 Python，安装过程无需联网，也不会修改系统 `PATH`。
+
 ## License
 
 DLForge 自有源码采用 [MIT License](LICENSE)。第三方组件保留各自许可证，详见 [THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt)。

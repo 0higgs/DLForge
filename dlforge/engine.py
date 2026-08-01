@@ -36,9 +36,14 @@ def app_root() -> Path:
 
 def tool_path(name: str) -> str:
     suffix = ".exe" if os.name == "nt" else ""
-    bundled = app_root() / "tools" / f"{name}{suffix}"
-    if bundled.exists():
-        return str(bundled)
+    candidates = [app_root() / "tools" / f"{name}{suffix}"]
+    if getattr(sys, "frozen", False):
+        # The online installer keeps downloaded tools beside DLForge.exe instead
+        # of embedding them in PyInstaller's private runtime directory.
+        candidates.insert(0, Path(sys.executable).resolve().parent / "tools" / f"{name}{suffix}")
+    for bundled in candidates:
+        if bundled.exists():
+            return str(bundled)
     if getattr(sys, "frozen", False):
         raise FileNotFoundError(f"发布包不完整：缺少内置组件 {name}{suffix}。请重新安装 DLForge。")
     found = shutil.which(name)
