@@ -9,12 +9,22 @@ yt-dlp
 FFmpeg / ffprobe
   Project: https://ffmpeg.org/
   Windows build: https://www.gyan.dev/ffmpeg/builds/
-  Bundled development build: Gyan.dev release essentials 8.1.2
+  Bundled build: Gyan.dev release essentials 8.1.2 (2026-06-27)
+  Binary release: https://github.com/GyanD/codexffmpeg/releases/tag/8.1.2
+  Archive SHA-256: db580001caa24ac104c8cb856cd113a87b0a443f7bdf47d8c12b1d740584a2ec
+  ffmpeg.exe SHA-256: 1326dde4c84ff1f96fe6b8916c5bed29e163e9b5dccf995f6f3db069d143ec5e
+  ffprobe.exe SHA-256: b49ccc7c6547b141ad5a2f6ec69cc04323d7133d7704d70b331b904c63eecb07
   License reported by `ffmpeg -L`: GNU General Public License v3 or later.
-  FFmpeg source revision: https://github.com/FFmpeg/FFmpeg/commit/38b88335f9
+  FFmpeg source revision: 38b88335f99e76ed89ff3c93f877fdefce736c13
+  Source: https://github.com/FFmpeg/FFmpeg/commit/38b88335f99e76ed89ff3c93f877fdefce736c13
+  DLForge source bundle: https://github.com/0higgs/DLForge/releases/tag/v0.5.0
+  GPLv3 text: licenses/FFmpeg-GPL-3.0.txt
+  Build configuration and external library versions:
+    licenses/FFmpeg-Gyan-8.1.2-README.txt
   The DLForge source repository does not contain or redistribute FFmpeg binaries.
-  Anyone redistributing a DLForge binary bundle that includes this FFmpeg build
-  must provide the applicable GPLv3 text and complete corresponding source.
+  DLForge v0.5.0 distributes the unmodified ffmpeg.exe and ffprobe.exe inside its
+  offline installer. The same GitHub Release provides the exact FFmpeg source
+  revision together with the build and license material listed above.
 
 Python
   Project: https://www.python.org/

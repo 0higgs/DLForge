@@ -1,0 +1,60 @@
+name: Build Windows release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install Python build dependencies
+        run: python -m pip install -r requirements-dev.txt
+
+      - name: Install Inno Setup
+        run: choco install innosetup --version=6.7.0 --yes --no-progress
+
+      - name: Prepare pinned media tools
+        shell: powershell
+        run: .\scripts\prepare_tools.ps1
+
+      - name: Run tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Build branded offline installer
+        shell: powershell
+        run: .\scripts\build_installer.ps1
+
+      - name: Build FFmpeg source asset
+        shell: powershell
+        run: .\scripts\prepare_ffmpeg_source.ps1
+
+      - name: Verify packaged dependencies
+        shell: powershell
+        run: |
+          $process = Start-Process -FilePath .\dist\DLForge\DLForge.exe -ArgumentList '--self-test' -Wait -PassThru -WindowStyle Hidden
+          if ($process.ExitCode -ne 0) { throw "Packaged dependency self-test failed: $($process.ExitCode)" }
+
+      - name: Upload release assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: DLForge-v0.5.0-windows-release
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            release/DLForge-0.5.0-Setup-offline.exe
+            release/DLForge-0.5.0-Setup-offline.exe.sha256
+            release/DLForge-0.5.0-FFmpeg-source-38b88335f9.zip
+            release/DLForge-0.5.0-FFmpeg-source-38b88335f9.zip.sha256

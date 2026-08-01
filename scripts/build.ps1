@@ -69,6 +69,7 @@ try {
     Copy-Item -LiteralPath (Join-Path $projectRoot "README.md") -Destination (Join-Path $projectRoot "dist\DLForge") -Force
     Copy-Item -LiteralPath (Join-Path $projectRoot "LICENSE") -Destination (Join-Path $projectRoot "dist\DLForge") -Force
     Copy-Item -LiteralPath (Join-Path $projectRoot "THIRD_PARTY_NOTICES.txt") -Destination (Join-Path $projectRoot "dist\DLForge") -Force
+    Copy-Item -LiteralPath (Join-Path $projectRoot "licenses") -Destination (Join-Path $projectRoot "dist\DLForge\licenses") -Recurse -Force
     $workDir = Join-Path $projectRoot "build"
     if (Test-Path -LiteralPath $workDir) {
         $resolvedRoot = [System.IO.Path]::GetFullPath($projectRoot).TrimEnd('\')

@@ -8,3 +8,4 @@ release/
 tools/*.exe
 tools/*.zip
 installer/*.generated.iss
+tmp/

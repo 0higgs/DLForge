@@ -27,7 +27,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\build.ps1
 powershell -ExecutionPolicy Bypass -File .\scripts\package.ps1
 ```
 
-发布文件位于 `release` 目录。公开分发前，请同时满足 `THIRD_PARTY_NOTICES.txt` 中列出的第三方许可证要求。
+发布文件位于 `release` 目录。公开分发时须同时提供 `THIRD_PARTY_NOTICES.txt`、`licenses` 目录以及对应的 FFmpeg 源码附件。
 
 ## 当前功能
 
@@ -48,9 +48,9 @@ powershell -ExecutionPolicy Bypass -File .\scripts\package.ps1
 
 ## 仓库与二进制说明
 
-本仓库只保存 DLForge 源码、测试和构建脚本，不提交 `yt-dlp.exe`、`ffmpeg.exe`、`ffprobe.exe` 或构建产物。运行 `scripts/prepare_tools.ps1` 会从各项目的公开发布地址准备本地构建所需工具。
+本仓库只保存 DLForge 源码、测试和构建脚本，不把 `yt-dlp.exe`、`ffmpeg.exe`、`ffprobe.exe` 或安装包写入 Git 历史。大型二进制通过 GitHub Release 发布。运行 `scripts/prepare_tools.ps1` 会下载固定版本并核验 SHA-256，不会使用会随时间变化的 `latest` 文件。
 
-当前 FFmpeg 来源为 Gyan.dev 的 release essentials 静态构建，该构建启用了 GPLv3。公开分发包含该构建的 Windows 压缩包时，发布者必须同时满足 GPLv3 对许可文本和对应源码的要求。DLForge 仓库的 MIT 许可不会取代任何第三方许可证。
+当前 FFmpeg 来源为 Gyan.dev 的 release essentials 8.1.2 静态构建，该构建启用了 GPLv3。仓库保存 GPLv3 全文、Gyan 原包构建配置与外部库版本清单；v0.5.0 Release 与离线安装器同页提供精确提交 `38b88335f99e76ed89ff3c93f877fdefce736c13` 的 FFmpeg 源码包。详见 [FFmpeg 来源与再分发资料](docs/FFMPEG_SOURCE.md)。DLForge 的 MIT 许可不会取代第三方许可证。
 
 ## 构建 Windows 离线安装器
 

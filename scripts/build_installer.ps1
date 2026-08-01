@@ -1,5 +1,6 @@
 param(
-    [switch]$SkipAppBuild
+    [switch]$SkipAppBuild,
+    [switch]$UseDefaultSetupIcon
 )
 
 $ErrorActionPreference = "Stop"
@@ -32,11 +33,16 @@ Copy-Item -LiteralPath (Join-Path $projectRoot "LICENSE") -Destination $publishD
 Copy-Item -LiteralPath (Join-Path $projectRoot "README.md") -Destination $publishDir -Force
 Copy-Item -LiteralPath (Join-Path $projectRoot "THIRD_PARTY_NOTICES.txt") -Destination $publishDir -Force
 
-& $iscc $installerScript
+$compilerArgs = @()
+if ($UseDefaultSetupIcon) { $compilerArgs += "/DUseDefaultSetupIcon" }
+& $iscc @compilerArgs $installerScript
 if ($LASTEXITCODE -ne 0) { throw "Inno Setup compilation failed." }
 
 $setup = Join-Path $projectRoot "release\DLForge-0.5.0-Setup-offline.exe"
-if (-not (Test-Path -LiteralPath $setup)) { throw "Installer output was not created: $setup" }
+$compiledSetup = Join-Path $projectRoot "tmp\installer-output\DLForge-0.5.0-Setup-offline.exe"
+if (-not (Test-Path -LiteralPath $compiledSetup)) { throw "Installer output was not created: $compiledSetup" }
+New-Item -ItemType Directory -Path (Split-Path -Parent $setup) -Force | Out-Null
+Copy-Item -LiteralPath $compiledSetup -Destination $setup -Force
 $hash = Get-FileHash -LiteralPath $setup -Algorithm SHA256
 $hashLine = "$($hash.Hash.ToLowerInvariant())  $([System.IO.Path]::GetFileName($setup))"
 Set-Content -LiteralPath ($setup + ".sha256") -Value $hashLine -Encoding ascii
