@@ -1,0 +1,37 @@
+DLForge third-party notices
+===========================
+
+yt-dlp
+  Project: https://github.com/yt-dlp/yt-dlp
+  License: The Unlicense
+  DLForge invokes the unmodified standalone executable as a separate process.
+
+FFmpeg / ffprobe
+  Project: https://ffmpeg.org/
+  Windows build: https://www.gyan.dev/ffmpeg/builds/
+  Bundled development build: Gyan.dev release essentials 8.1.2
+  License reported by `ffmpeg -L`: GNU General Public License v3 or later.
+  FFmpeg source revision: https://github.com/FFmpeg/FFmpeg/commit/38b88335f9
+  The DLForge source repository does not contain or redistribute FFmpeg binaries.
+  Anyone redistributing a DLForge binary bundle that includes this FFmpeg build
+  must provide the applicable GPLv3 text and complete corresponding source.
+
+Python
+  Project: https://www.python.org/
+  License: Python Software Foundation License Version 2
+  The packaged application includes the Python runtime and Tcl/Tk components.
+
+PyInstaller
+  Project: https://pyinstaller.org/
+  License: GPL 2.0 with a special exception permitting distribution of bundled apps.
+
+CustomTkinter
+  Project: https://github.com/TomSchimansky/CustomTkinter
+  License: MIT License
+
+Pillow
+  Project: https://python-pillow.github.io/
+  License: HPND
+
+DLForge is not affiliated with yt-dlp, FFmpeg, Gyan.dev, or any supported website.
+The MIT license for DLForge does not relicense any third-party component.
