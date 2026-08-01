@@ -7,7 +7,10 @@ $ErrorActionPreference = "Stop"
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $installerScript = Join-Path $projectRoot "installer\DLForge.iss"
-$isccCandidates = @(
+$isccCandidates = @()
+$isccOnPath = Get-Command ISCC.exe -ErrorAction SilentlyContinue
+if ($isccOnPath) { $isccCandidates += $isccOnPath.Source }
+$isccCandidates += @(
     "D:\ProgramFiles\Inno Setup 7\ISCC.exe",
     (Join-Path $env:LOCALAPPDATA "Programs\Inno Setup 6\ISCC.exe"),
     (Join-Path $env:LOCALAPPDATA "Programs\Inno Setup 7\ISCC.exe"),

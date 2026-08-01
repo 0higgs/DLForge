@@ -23,8 +23,11 @@ jobs:
       - name: Install Python build dependencies
         run: python -m pip install -r requirements-dev.txt
 
-      - name: Install Inno Setup
-        run: choco install innosetup --version=6.7.0 --yes --no-progress
+      - name: Verify Inno Setup
+        shell: powershell
+        run: |
+          $compiler = Get-Command ISCC.exe -ErrorAction Stop
+          Write-Host "Using $($compiler.Source)"
 
       - name: Prepare pinned media tools
         shell: powershell
