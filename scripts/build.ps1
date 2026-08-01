@@ -47,9 +47,11 @@ Push-Location $projectRoot
 try {
     $pyInstallerArgs = @(
         "--noconfirm", "--clean", "--windowed", "--onedir", "--name", "DLForge",
+        "--icon", "assets\dlforge.ico",
         "--hidden-import", "tkinter",
         "--runtime-hook", "scripts\pyi_rth_tkinter.py",
         "--add-data", "$customTkRoot;customtkinter",
+        "--add-data", "assets;assets",
         "--add-data", "$tkinterPackage;tkinter",
         "--add-data", "$tclLibrary;_tcl_data",
         "--add-data", "$tkLibrary;_tk_data",

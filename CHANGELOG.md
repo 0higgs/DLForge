@@ -2,6 +2,7 @@
 
 ## v0.5.0 - 2026-08-02
 
+- Added an original blue hollow-D icon to the app and installer.
 - Added a guided Windows installer with Start menu and optional desktop shortcuts.
 - Added a fully offline installer containing yt-dlp, FFmpeg, and ffprobe.
 - Kept all media tools private to DLForge, without requiring Python or changing PATH.

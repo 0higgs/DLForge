@@ -3,6 +3,7 @@ from __future__ import annotations
 import io
 import os
 import queue
+import sys
 import threading
 import tkinter as tk
 import urllib.request
@@ -36,6 +37,11 @@ class DLForgeApp(ctk.CTk):
         ctk.set_default_color_theme("blue")
         super().__init__()
         self.title("DLForge")
+        icon_path = Path(__file__).resolve().parents[1] / "assets" / "dlforge.ico"
+        if getattr(sys, "frozen", False):
+            icon_path = Path(getattr(sys, "_MEIPASS")) / "assets" / "dlforge.ico"
+        if icon_path.exists():
+            self.iconbitmap(str(icon_path))
         self.geometry("1180x800")
         self.minsize(920, 700)
         self.configure(fg_color=BG)

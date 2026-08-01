@@ -26,6 +26,7 @@ OutputDir=..\release
 OutputBaseFilename=DLForge-0.5.0-Setup-offline
 LicenseFile=..\LICENSE
 InfoBeforeFile=INSTALL_NOTICE_zh-CN.txt
+SetupIconFile=..\assets\dlforge.ico
 UninstallDisplayIcon={app}\DLForge.exe
 CloseApplications=yes
 RestartApplications=no
@@ -43,8 +44,8 @@ Source: "..\dist\DLForge\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdi
 Source: "ChineseSimplified.LICENSE"; DestDir: "{app}\licenses"; DestName: "Inno-Setup-Chinese-Translation-MIT.txt"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\DLForge"; Filename: "{app}\DLForge.exe"; WorkingDir: "{app}"
-Name: "{autodesktop}\DLForge"; Filename: "{app}\DLForge.exe"; WorkingDir: "{app}"; Tasks: desktopicon
+Name: "{group}\DLForge"; Filename: "{app}\DLForge.exe"; WorkingDir: "{app}"; IconFilename: "{app}\DLForge.exe"
+Name: "{autodesktop}\DLForge"; Filename: "{app}\DLForge.exe"; WorkingDir: "{app}"; IconFilename: "{app}\DLForge.exe"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\DLForge.exe"; Description: "启动 DLForge"; Flags: nowait postinstall skipifsilent
