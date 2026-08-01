@@ -37,11 +37,13 @@ class DLForgeApp(ctk.CTk):
         ctk.set_default_color_theme("blue")
         super().__init__()
         self.title("DLForge")
-        icon_path = Path(__file__).resolve().parents[1] / "assets" / "dlforge.ico"
+        self.assets_path = Path(__file__).resolve().parents[1] / "assets"
         if getattr(sys, "frozen", False):
-            icon_path = Path(getattr(sys, "_MEIPASS")) / "assets" / "dlforge.ico"
-        if icon_path.exists():
-            self.iconbitmap(str(icon_path))
+            self.assets_path = Path(getattr(sys, "_MEIPASS")) / "assets"
+        self._set_window_icon()
+        # CustomTkinter applies its own fallback icon shortly after startup on
+        # Windows. Re-apply DLForge's icon once that initialization has ended.
+        self.after(250, self._set_window_icon)
         self.geometry("1180x800")
         self.minsize(920, 700)
         self.configure(fg_color=BG)
@@ -67,6 +69,14 @@ class DLForgeApp(ctk.CTk):
         self.protocol("WM_DELETE_WINDOW", self._on_close)
         self.after(80, self._drain_events)
         self.after(650, self._pulse_status)
+
+    def _set_window_icon(self) -> None:
+        icon_path = self.assets_path / "dlforge.ico"
+        if icon_path.exists():
+            try:
+                self.iconbitmap(default=str(icon_path))
+            except tk.TclError:
+                pass
 
     def _build_ui(self) -> None:
         self._build_header()
@@ -99,10 +109,23 @@ class DLForgeApp(ctk.CTk):
         header.pack_propagate(False)
         brand = ctk.CTkFrame(header, fg_color="transparent")
         brand.pack(side="left", fill="y")
-        ctk.CTkLabel(
-            brand, text="D", width=42, height=42, corner_radius=13, fg_color=ACCENT,
-            text_color="white", font=("Segoe UI", 22, "bold"),
-        ).pack(side="left", pady=3)
+        brand_icon_path = self.assets_path / "dlforge-icon.png"
+        if brand_icon_path.exists():
+            brand_icon_source = Image.open(brand_icon_path)
+            self._brand_icon = ctk.CTkImage(
+                light_image=brand_icon_source,
+                dark_image=brand_icon_source,
+                size=(44, 44),
+            )
+            ctk.CTkLabel(
+                brand, text="", image=self._brand_icon, width=44, height=44,
+                fg_color="transparent",
+            ).pack(side="left", pady=2)
+        else:
+            ctk.CTkLabel(
+                brand, text="D", width=42, height=42, corner_radius=13, fg_color=ACCENT,
+                text_color="white", font=("Segoe UI", 22, "bold"),
+            ).pack(side="left", pady=3)
         brand_text = ctk.CTkFrame(brand, fg_color="transparent")
         brand_text.pack(side="left", padx=(13, 0), pady=3)
         ctk.CTkLabel(brand_text, text="DLForge", text_color=TEXT, font=("Segoe UI", 23, "bold")).pack(anchor="w")

@@ -20,14 +20,17 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0.17763
 WizardStyle=modern
+WizardSmallImageFile=..\assets\dlforge-icon.png
 Compression=lzma2/max
 SolidCompression=yes
-OutputDir=..\release
+OutputDir=..\tmp\installer-output
 OutputBaseFilename=DLForge-0.5.0-Setup-offline
 LicenseFile=..\LICENSE
 InfoBeforeFile=INSTALL_NOTICE_zh-CN.txt
+#ifndef UseDefaultSetupIcon
 SetupIconFile=..\assets\dlforge.ico
-UninstallDisplayIcon={app}\DLForge.exe
+#endif
+UninstallDisplayIcon={app}\DLForge.ico
 CloseApplications=yes
 RestartApplications=no
 SetupMutex=DLForgeSetupMutex
@@ -41,11 +44,12 @@ Name: "desktopicon"; Description: "创建桌面快捷方式"; GroupDescription: 
 
 [Files]
 Source: "..\dist\DLForge\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\assets\dlforge.ico"; DestDir: "{app}"; DestName: "DLForge.ico"; Flags: ignoreversion
 Source: "ChineseSimplified.LICENSE"; DestDir: "{app}\licenses"; DestName: "Inno-Setup-Chinese-Translation-MIT.txt"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\DLForge"; Filename: "{app}\DLForge.exe"; WorkingDir: "{app}"; IconFilename: "{app}\DLForge.exe"
-Name: "{autodesktop}\DLForge"; Filename: "{app}\DLForge.exe"; WorkingDir: "{app}"; IconFilename: "{app}\DLForge.exe"; Tasks: desktopicon
+Name: "{group}\DLForge"; Filename: "{app}\DLForge.exe"; WorkingDir: "{app}"; IconFilename: "{app}\DLForge.ico"
+Name: "{autodesktop}\DLForge"; Filename: "{app}\DLForge.exe"; WorkingDir: "{app}"; IconFilename: "{app}\DLForge.ico"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\DLForge.exe"; Description: "启动 DLForge"; Flags: nowait postinstall skipifsilent

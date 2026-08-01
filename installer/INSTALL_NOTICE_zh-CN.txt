@@ -8,3 +8,6 @@ DLForge 离线安装说明
 这些组件仅保存在 DLForge 自己的程序目录中，不会安装 Python，也不会修改系统 PATH。卸载 DLForge 时这些组件会一并移除。
 
 DLForge 自有源码使用 MIT License。yt-dlp、FFmpeg 及其构建保留各自许可证。请仅下载你有权保存的内容，并遵守目标网站服务条款及所在地法律。
+
+FFmpeg 使用 GPLv3 或更高版本。安装后可在 DLForge 的 licenses 目录查看 GPLv3 全文、Gyan 构建配置和外部库版本清单；精确对应的 FFmpeg 源码可从 DLForge v0.5.0 Release 页面下载：
+https://github.com/0higgs/DLForge/releases/tag/v0.5.0

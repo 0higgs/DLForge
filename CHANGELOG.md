@@ -2,11 +2,15 @@
 
 ## v0.5.0 - 2026-08-02
 
-- Added an original blue hollow-D icon to the app and installer.
+- Added a distinctive purple-blue download/anvil/media icon across the app,
+  executable, installer UI, shortcuts, and uninstall entry.
 - Added a guided Windows installer with Start menu and optional desktop shortcuts.
 - Added a fully offline installer containing yt-dlp, FFmpeg, and ffprobe.
 - Kept all media tools private to DLForge, without requiring Python or changing PATH.
 - Added complete uninstall cleanup for installer-managed tools.
+- Pinned yt-dlp and FFmpeg downloads with SHA-256 verification.
+- Added the GPLv3 text, the original Gyan build manifest, exact binary hashes,
+  and an exact-revision FFmpeg source bundle for the binary Release.
 
 ## v0.4.0 - 2026-08-02
 
@@ -17,6 +21,5 @@
 - Added frozen-app dependency discovery without requiring Python on end-user systems.
 - Added reproducible Windows build and packaging scripts.
 
-This GitHub release is source-only. Windows packages that redistribute FFmpeg
-must also satisfy the license and corresponding-source obligations documented in
-`THIRD_PARTY_NOTICES.txt`.
+The v0.5.0 GitHub Release publishes the offline Windows installer, its SHA-256
+file, and the exact-revision FFmpeg source bundle together.
