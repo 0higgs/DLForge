@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import locale
 import os
 import re
 import shutil
@@ -26,6 +27,23 @@ class DownloadOptions:
     playlist: bool = False
     subtitles: bool = False
     playlist_items: tuple[int, ...] = ()
+    expected_items: tuple[int, ...] = ()
+
+
+def decode_subprocess_output(data: bytes) -> str:
+    """Decode yt-dlp output without corrupting localized Windows filenames."""
+    encodings = ("utf-8", locale.getpreferredencoding(False), "mbcs", "gb18030")
+    tried: set[str] = set()
+    for encoding in encodings:
+        normalized = encoding.lower()
+        if normalized in tried:
+            continue
+        tried.add(normalized)
+        try:
+            return data.decode(encoding)
+        except (UnicodeDecodeError, LookupError):
+            continue
+    return data.decode("utf-8", errors="replace")
 
 
 def app_root() -> Path:
@@ -63,9 +81,12 @@ def _startupinfo() -> subprocess.STARTUPINFO | None:
 class DownloadEngine:
     def __init__(self, emit: Callable[[dict], None]):
         self.emit = emit
-        self._process: subprocess.Popen[str] | None = None
+        self._process: subprocess.Popen[bytes] | None = None
         self._lock = threading.Lock()
         self._cancel_requested = False
+        self._completed_items: set[int] = set()
+        self._saved_count = 0
+        self._expected_items: tuple[int, ...] = ()
 
     def inspect(self, url: str) -> None:
         threading.Thread(target=self._inspect_worker, args=(url,), daemon=True).start()
@@ -83,15 +104,12 @@ class DownloadEngine:
             result = subprocess.run(
                 command,
                 capture_output=True,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
                 startupinfo=_startupinfo(),
                 timeout=45,
             )
             if result.returncode != 0:
-                raise RuntimeError(self._last_error(result.stderr))
-            data = json.loads(result.stdout)
+                raise RuntimeError(self._last_error(decode_subprocess_output(result.stderr)))
+            data = json.loads(decode_subprocess_output(result.stdout))
             self.emit(self._metadata_event(data, url))
         except Exception as exc:
             self.emit({"type": "inspect_error", "message": f"链接解析失败：{exc}"})
@@ -103,6 +121,9 @@ class DownloadEngine:
 
     def _download_worker(self, options: DownloadOptions) -> None:
         try:
+            self._completed_items.clear()
+            self._saved_count = 0
+            self._expected_items = options.expected_items
             options.output_dir.mkdir(parents=True, exist_ok=True)
             command = self._build_command(options)
             self.emit({"type": "started", "command": command})
@@ -113,10 +134,7 @@ class DownloadEngine:
                 command,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-                bufsize=1,
+                bufsize=0,
                 startupinfo=_startupinfo(),
                 creationflags=creationflags,
             )
@@ -127,7 +145,7 @@ class DownloadEngine:
                 self._terminate_process_tree(process)
             assert process.stdout is not None
             for raw_line in process.stdout:
-                self._parse_line(raw_line.rstrip())
+                self._parse_line(decode_subprocess_output(raw_line.rstrip(b"\r\n")))
             return_code = process.wait()
             with self._lock:
                 self._process = None
@@ -136,6 +154,19 @@ class DownloadEngine:
                 self.emit({"type": "cancelled"})
             elif return_code == 0:
                 self.emit({"type": "finished"})
+            elif self._saved_count:
+                expected = set(options.expected_items)
+                failed_items = tuple(sorted(expected - self._completed_items))
+                completed = len(self._completed_items) if expected else self._saved_count
+                self.emit(
+                    {
+                        "type": "partial",
+                        "completed": completed,
+                        "expected": len(expected) or None,
+                        "failed_items": failed_items,
+                        "return_code": return_code,
+                    }
+                )
             else:
                 self.emit({"type": "error", "message": f"下载失败（退出码 {return_code}），请查看任务日志。"})
         except Exception as exc:
@@ -154,9 +185,9 @@ class DownloadEngine:
             "--ffmpeg-location",
             str(Path(ffmpeg).parent),
             "--progress-template",
-            f"download:{PROGRESS_PREFIX}%(progress._percent_str)s|%(progress._speed_str)s|%(progress._eta_str)s",
+            f"download:{PROGRESS_PREFIX}%(playlist_index|)s|%(progress._percent_str)s|%(progress._speed_str)s|%(progress._eta_str)s",
             "--print",
-            f"after_move:{FILE_PREFIX}%(filepath)s",
+            f"after_move:{FILE_PREFIX}%(playlist_index|)s|%(filepath)s",
             "--output",
             str(options.output_dir / "%(title).180B [%(id)s].%(ext)s"),
         ]
@@ -184,7 +215,7 @@ class DownloadEngine:
             self._terminate_process_tree(process)
 
     @staticmethod
-    def _terminate_process_tree(process: subprocess.Popen[str]) -> None:
+    def _terminate_process_tree(process: subprocess.Popen[bytes]) -> None:
         if os.name == "nt":
             subprocess.run(
                 ["taskkill.exe", "/PID", str(process.pid), "/T", "/F"],
@@ -267,18 +298,49 @@ class DownloadEngine:
 
     def _parse_line(self, line: str) -> None:
         if line.startswith(PROGRESS_PREFIX):
-            fields = line[len(PROGRESS_PREFIX) :].split("|", 2)
-            match = re.search(r"([\d.]+)%", fields[0])
+            fields = line[len(PROGRESS_PREFIX) :].split("|", 3)
+            try:
+                item_index = int(fields[0])
+            except (ValueError, IndexError):
+                item_index = None
+            match = re.search(r"([\d.]+)%", fields[1] if len(fields) > 1 else "")
+            item_percent = float(match.group(1)) if match else 0.0
+            total = len(self._expected_items) or 1
+            completed = len(self._completed_items)
+            overall_percent = min(100.0, (completed + item_percent / 100.0) / total * 100.0)
             self.emit(
                 {
                     "type": "progress",
-                    "percent": float(match.group(1)) if match else 0.0,
-                    "speed": fields[1].strip() if len(fields) > 1 else "",
-                    "eta": fields[2].strip() if len(fields) > 2 else "",
+                    "percent": overall_percent,
+                    "item_percent": item_percent,
+                    "item_index": item_index,
+                    "completed": completed,
+                    "total": total,
+                    "speed": fields[2].strip() if len(fields) > 2 else "",
+                    "eta": fields[3].strip() if len(fields) > 3 else "",
                 }
             )
         elif line.startswith(FILE_PREFIX):
-            self.emit({"type": "file", "path": line[len(FILE_PREFIX) :]})
+            item_text, separator, path = line[len(FILE_PREFIX) :].partition("|")
+            if not separator:
+                path = item_text
+                item_text = ""
+            try:
+                item_index = int(item_text)
+            except ValueError:
+                item_index = None
+            if item_index is not None:
+                self._completed_items.add(item_index)
+            self._saved_count += 1
+            self.emit(
+                {
+                    "type": "file",
+                    "path": path,
+                    "item_index": item_index,
+                    "completed": len(self._completed_items) if self._expected_items else self._saved_count,
+                    "total": len(self._expected_items) or 1,
+                }
+            )
         elif line:
             self.emit({"type": "log", "message": line})
 
