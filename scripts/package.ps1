@@ -3,7 +3,7 @@ $ErrorActionPreference = "Stop"
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $publishDir = Join-Path $projectRoot "dist\DLForge"
 $releaseDir = Join-Path $projectRoot "release"
-$archive = Join-Path $releaseDir "DLForge-0.5.0-win64.zip"
+$archive = Join-Path $releaseDir "DLForge-0.5.1-win64.zip"
 
 if (-not (Test-Path -LiteralPath (Join-Path $publishDir "DLForge.exe"))) {
     throw "Missing dist/DLForge/DLForge.exe. Run scripts/build.ps1 first."

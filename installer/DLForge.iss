@@ -1,5 +1,5 @@
 #define MyAppName "DLForge"
-#define MyAppVersion "0.5.0"
+#define MyAppVersion "0.5.1"
 #define MyAppPublisher "0higgs"
 #define MyAppURL "https://github.com/0higgs/DLForge"
 
@@ -24,7 +24,7 @@ WizardSmallImageFile=..\assets\dlforge-icon.png
 Compression=lzma2/max
 SolidCompression=yes
 OutputDir=..\tmp\installer-output
-OutputBaseFilename=DLForge-0.5.0-Setup-offline
+OutputBaseFilename=DLForge-0.5.1-Setup-offline
 LicenseFile=..\LICENSE
 InfoBeforeFile=INSTALL_NOTICE_zh-CN.txt
 #ifndef UseDefaultSetupIcon

@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from dlforge.engine import DownloadEngine, DownloadOptions, tool_path
+from dlforge.engine import DownloadEngine, DownloadOptions, decode_subprocess_output, tool_path
 
 
 class EngineTests(unittest.TestCase):
@@ -78,6 +78,36 @@ class EngineTests(unittest.TestCase):
             metadata = self.engine._bilibili_metadata("https://www.bilibili.com/video/BV1AB411C7DE")
         self.assertEqual(metadata["uploader"], "作者")
         self.assertEqual(metadata["entries"][1]["title"], "第二讲")
+
+    def test_windows_gbk_output_preserves_chinese_filename(self):
+        message = "已保存：26年9月计算机三级网络技术.mp4"
+        with mock.patch("dlforge.engine.locale.getpreferredencoding", return_value="gb18030"):
+            self.assertEqual(decode_subprocess_output(message.encode("gb18030")), message)
+
+    def test_file_event_tracks_playlist_index(self):
+        self.engine._parse_line("DLFORGE_FILE:21|D:/视频/第二十一集.mp4")
+        self.assertEqual(self.events[-1]["item_index"], 21)
+        self.assertEqual(self.events[-1]["path"], "D:/视频/第二十一集.mp4")
+        self.assertEqual(self.engine._completed_items, {21})
+
+    def test_command_prints_playlist_index_with_saved_file(self):
+        with mock.patch("dlforge.engine.tool_path", side_effect=lambda name: f"C:/tools/{name}.exe"):
+            command = self.engine._build_command(
+                DownloadOptions("https://example.com/list", Path("out"), "best", True)
+            )
+        print_template = command[command.index("--print") + 1]
+        self.assertIn("%(playlist_index|)s", print_template)
+
+    def test_progress_reports_current_item_and_overall_playlist_progress(self):
+        self.engine._expected_items = (2, 5, 9)
+        self.engine._completed_items = {2}
+        self.engine._parse_line("DLFORGE_PROGRESS:5| 50.0%|2.0MiB/s|00:12")
+        event = self.events[-1]
+        self.assertEqual(event["item_index"], 5)
+        self.assertEqual(event["item_percent"], 50.0)
+        self.assertAlmostEqual(event["percent"], 50.0)
+        self.assertEqual(event["completed"], 1)
+        self.assertEqual(event["total"], 3)
 
 
 if __name__ == "__main__":

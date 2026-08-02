@@ -36,13 +36,15 @@ Copy-Item -LiteralPath (Join-Path $projectRoot "LICENSE") -Destination $publishD
 Copy-Item -LiteralPath (Join-Path $projectRoot "README.md") -Destination $publishDir -Force
 Copy-Item -LiteralPath (Join-Path $projectRoot "THIRD_PARTY_NOTICES.txt") -Destination $publishDir -Force
 
-$compilerArgs = @()
+$compilerOutputDir = Join-Path ([System.IO.Path]::GetTempPath()) ("dlforge-installer-" + [guid]::NewGuid().ToString("N"))
+New-Item -ItemType Directory -Path $compilerOutputDir -Force | Out-Null
+$compilerArgs = @("/O$compilerOutputDir")
 if ($UseDefaultSetupIcon) { $compilerArgs += "/DUseDefaultSetupIcon" }
 & $iscc @compilerArgs $installerScript
 if ($LASTEXITCODE -ne 0) { throw "Inno Setup compilation failed." }
 
-$setup = Join-Path $projectRoot "release\DLForge-0.5.0-Setup-offline.exe"
-$compiledSetup = Join-Path $projectRoot "tmp\installer-output\DLForge-0.5.0-Setup-offline.exe"
+$setup = Join-Path $projectRoot "release\DLForge-0.5.1-Setup-offline.exe"
+$compiledSetup = Join-Path $compilerOutputDir "DLForge-0.5.1-Setup-offline.exe"
 if (-not (Test-Path -LiteralPath $compiledSetup)) { throw "Installer output was not created: $compiledSetup" }
 New-Item -ItemType Directory -Path (Split-Path -Parent $setup) -Force | Out-Null
 Copy-Item -LiteralPath $compiledSetup -Destination $setup -Force
@@ -51,3 +53,13 @@ $hashLine = "$($hash.Hash.ToLowerInvariant())  $([System.IO.Path]::GetFileName($
 Set-Content -LiteralPath ($setup + ".sha256") -Value $hashLine -Encoding ascii
 Write-Host "Installer ready: $setup"
 Write-Host "SHA256: $($hash.Hash.ToLowerInvariant())"
+try {
+    $resolvedCompilerOutput = [System.IO.Path]::GetFullPath($compilerOutputDir)
+    $resolvedSystemTemp = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath()).TrimEnd('\')
+    if ($resolvedCompilerOutput.StartsWith($resolvedSystemTemp + '\', [System.StringComparison]::OrdinalIgnoreCase)) {
+        Remove-Item -LiteralPath $resolvedCompilerOutput -Recurse -Force
+    }
+}
+catch {
+    Write-Warning "Temporary installer output is still in use and will be cleaned by Windows later: $compilerOutputDir"
+}

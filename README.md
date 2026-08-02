@@ -41,6 +41,8 @@ powershell -ExecutionPolicy Bypass -File .\scripts\package.ps1
 - “仅当前 / 已选分集 / 全部列表”下载范围
 - 中英文字幕下载
 - 进度、速度、剩余时间和任务日志
+- 当前分集与全部任务的双进度显示，并标注已完成集数
+- 播放列表部分失败时自动定位失败分集并提供一键重试
 - 取消任务、打开保存目录
 - Windows 下取消时终止 yt-dlp 与 FFmpeg 整个进程树
 
@@ -50,7 +52,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\package.ps1
 
 本仓库只保存 DLForge 源码、测试和构建脚本，不把 `yt-dlp.exe`、`ffmpeg.exe`、`ffprobe.exe` 或安装包写入 Git 历史。大型二进制通过 GitHub Release 发布。运行 `scripts/prepare_tools.ps1` 会下载固定版本并核验 SHA-256，不会使用会随时间变化的 `latest` 文件。
 
-当前 FFmpeg 来源为 Gyan.dev 的 release essentials 8.1.2 静态构建，该构建启用了 GPLv3。仓库保存 GPLv3 全文、Gyan 原包构建配置与外部库版本清单；v0.5.0 Release 与离线安装器同页提供精确提交 `38b88335f99e76ed89ff3c93f877fdefce736c13` 的 FFmpeg 源码包。详见 [FFmpeg 来源与再分发资料](docs/FFMPEG_SOURCE.md)。DLForge 的 MIT 许可不会取代第三方许可证。
+当前 FFmpeg 来源为 Gyan.dev 的 release essentials 8.1.2 静态构建，该构建启用了 GPLv3。仓库保存 GPLv3 全文、Gyan 原包构建配置与外部库版本清单；每个二进制 Release 都与离线安装器同页提供精确提交 `38b88335f99e76ed89ff3c93f877fdefce736c13` 的 FFmpeg 源码包。详见 [FFmpeg 来源与再分发资料](docs/FFMPEG_SOURCE.md)。DLForge 的 MIT 许可不会取代第三方许可证。
 
 ## 构建 Windows 离线安装器
 
@@ -60,7 +62,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\package.ps1
 powershell -ExecutionPolicy Bypass -File .\scripts\build_installer.ps1
 ```
 
-生成文件为 `release\DLForge-0.5.0-Setup-offline.exe`。安装包内置固定版本的 yt-dlp、FFmpeg 和 ffprobe，并安装到 DLForge 私有目录。目标电脑无需 Python，安装过程无需联网，也不会修改系统 `PATH`。
+生成文件为 `release\DLForge-0.5.1-Setup-offline.exe`。安装包内置固定版本的 yt-dlp、FFmpeg 和 ffprobe，并安装到 DLForge 私有目录。目标电脑无需 Python，安装过程无需联网，也不会修改系统 `PATH`。
 
 ## License
 

@@ -53,11 +53,11 @@ jobs:
       - name: Upload release assets
         uses: actions/upload-artifact@v4
         with:
-          name: DLForge-v0.5.0-windows-release
+          name: DLForge-v0.5.1-windows-release
           if-no-files-found: error
           retention-days: 14
           path: |
-            release/DLForge-0.5.0-Setup-offline.exe
-            release/DLForge-0.5.0-Setup-offline.exe.sha256
-            release/DLForge-0.5.0-FFmpeg-source-38b88335f9.zip
-            release/DLForge-0.5.0-FFmpeg-source-38b88335f9.zip.sha256
+            release/DLForge-0.5.1-Setup-offline.exe
+            release/DLForge-0.5.1-Setup-offline.exe.sha256
+            release/DLForge-0.5.1-FFmpeg-source-38b88335f9.zip
+            release/DLForge-0.5.1-FFmpeg-source-38b88335f9.zip.sha256

@@ -64,6 +64,8 @@ class DLForgeApp(ctk.CTk):
         self._log_lines: list[str] = []
         self._log_window: ctk.CTkToplevel | None = None
         self._log_view: ctk.CTkTextbox | None = None
+        self._retry_items: tuple[int, ...] = ()
+        self._task_total = 1
 
         self._build_ui()
         self.protocol("WM_DELETE_WINDOW", self._on_close)
@@ -306,6 +308,30 @@ class DLForgeApp(ctk.CTk):
         self.task_card.pack(side="bottom", fill="x", padx=28, pady=(0, 18))
         body = ctk.CTkFrame(self.task_card, fg_color="transparent")
         body.pack(fill="x", padx=18, pady=14)
+        item_heading = ctk.CTkFrame(body, fg_color="transparent")
+        item_heading.pack(fill="x", pady=(0, 5))
+        self.item_progress_label = ctk.CTkLabel(
+            item_heading, text="当前分集 · 等待开始", text_color=MUTED,
+            font=("Microsoft YaHei UI", 9),
+        )
+        self.item_progress_label.pack(side="left")
+        self.item_percent_label = ctk.CTkLabel(
+            item_heading, text="0%", text_color=ACCENT_HOVER,
+            font=("Segoe UI", 9, "bold"),
+        )
+        self.item_percent_label.pack(side="right")
+        self.item_progress = ctk.CTkProgressBar(
+            body, height=5, corner_radius=3, fg_color=SURFACE_3, progress_color="#4E8CFF",
+        )
+        self.item_progress.set(0)
+        self.item_progress.pack(fill="x", pady=(0, 9))
+        total_heading = ctk.CTkFrame(body, fg_color="transparent")
+        total_heading.pack(fill="x", pady=(0, 5))
+        self.total_progress_label = ctk.CTkLabel(
+            total_heading, text="总进度 · 0/1 集", text_color=MUTED,
+            font=("Microsoft YaHei UI", 9),
+        )
+        self.total_progress_label.pack(side="left")
         self.progress = ctk.CTkProgressBar(
             body, height=7, corner_radius=4, fg_color=SURFACE_3, progress_color=ACCENT,
         )
@@ -388,15 +414,29 @@ class DLForgeApp(ctk.CTk):
             return
         playlist_mode = scope in {"已选分集", "全部列表"}
         requested_items = selected_items if scope == "已选分集" else ()
+        if scope == "已选分集":
+            expected_items = selected_items
+        elif scope == "全部列表":
+            expected_items = tuple(sorted(self.selected_vars))
+        else:
+            expected_items = ()
         preset_map = {"最佳 MP4": "best", "1080p": "1080", "720p": "720", "MP3": "audio"}
         options = DownloadOptions(
             url=url, output_dir=Path(self.output_var.get()).expanduser(),
             preset=preset_map[self.preset_var.get()], playlist=playlist_mode,
             subtitles=self.subtitles_var.get(), playlist_items=requested_items,
+            expected_items=expected_items,
         )
+        self._retry_items = ()
+        self._reset_log()
+        self._task_total = len(expected_items) or 1
         self._target_progress = 0
         self._display_progress = 0
         self.progress.set(0)
+        self.item_progress.set(0)
+        self.item_percent_label.configure(text="0%")
+        self.item_progress_label.configure(text="当前分集 · 正在准备")
+        self.total_progress_label.configure(text=f"总进度 · 0/{self._task_total} 集")
         self.percent_label.configure(text="0%")
         self._set_running(True)
         self.engine.download(options)
@@ -408,7 +448,10 @@ class DLForgeApp(ctk.CTk):
 
     def _set_running(self, running: bool) -> None:
         self._running = running
-        self.download_button.configure(state="disabled" if running else "normal")
+        button_text = "下载中…" if running else (
+            f"重试失败 {len(self._retry_items)} 集  ↻" if self._retry_items else "开始下载  ↓"
+        )
+        self.download_button.configure(state="disabled" if running else "normal", text=button_text)
         self.cancel_button.configure(state="normal" if running else "disabled", text="取消任务")
         self.header_status.configure(
             text="  ●  WORKING  " if running else "  ●  READY  ",
@@ -433,6 +476,7 @@ class DLForgeApp(ctk.CTk):
             self.meta_detail.set("正在识别视频、作者、时长与列表结构…")
             self._animate_parsing()
         elif kind == "metadata":
+            self._retry_items = ()
             self._parsing = False
             self.inspect_button.configure(state="normal", text="重新解析  ↻")
             entries = event.get("entries") or []
@@ -454,20 +498,55 @@ class DLForgeApp(ctk.CTk):
             self._append_log("任务已开始")
         elif kind == "progress":
             self._set_progress_target(event["percent"])
+            item_percent = float(event.get("item_percent") or 0)
+            item_index = event.get("item_index")
+            item_name = f"第 {item_index} 集" if item_index else "当前视频"
+            self.item_progress.set(max(0.0, min(1.0, item_percent / 100)))
+            self.item_percent_label.configure(text=f"{item_percent:.0f}%")
+            self.item_progress_label.configure(text=f"当前分集 · {item_name}")
+            self.total_progress_label.configure(
+                text=f'总进度 · {event.get("completed", 0)}/{event.get("total", self._task_total)} 集'
+            )
             speed = event["speed"] or "--"
             eta = event["eta"] or "--"
-            self.status_var.set(f"正在下载  ·  {speed}  ·  剩余 {eta}")
+            self.status_var.set(f"正在下载 {item_name}  ·  {speed}  ·  本集剩余 {eta}")
         elif kind == "file":
             self.last_file = Path(event["path"])
+            self.total_progress_label.configure(
+                text=f'总进度 · {event.get("completed", 0)}/{event.get("total", self._task_total)} 集'
+            )
             self._append_log(f'已保存：{event["path"]}')
         elif kind == "log":
             self._append_log(event["message"])
         elif kind == "finished":
+            self._retry_items = ()
             self._set_progress_target(100)
+            self.item_progress.set(1)
+            self.item_percent_label.configure(text="100%")
+            self.total_progress_label.configure(text=f"总进度 · {self._task_total}/{self._task_total} 集")
             self.status_var.set("下载完成，文件已经锻造完毕")
             self._set_running(False)
             self.status_dot.configure(text_color=SUCCESS)
             self._show_toast("下载完成", "success")
+        elif kind == "partial":
+            completed = int(event.get("completed") or 0)
+            expected = event.get("expected")
+            failed_items = tuple(event.get("failed_items") or ())
+            self._retry_items = failed_items
+            if failed_items:
+                for index, variable in self.selected_vars.items():
+                    variable.set(index in failed_items)
+                self._selection_changed()
+                self.scope_var.set("已选分集")
+            summary = f"已完成 {completed}/{expected} 集" if expected else f"已保存 {completed} 个文件"
+            retry_text = f"，{len(failed_items)} 集可重试" if failed_items else "，部分项目未完成"
+            message = summary + retry_text
+            self.total_progress_label.configure(text=f"总进度 · {completed}/{expected or self._task_total} 集")
+            self.status_var.set(message)
+            self._append_log(message)
+            self._set_running(False)
+            self.status_dot.configure(text_color=WARNING)
+            self._show_toast(message, "warning")
         elif kind == "cancelling":
             self.status_var.set("正在停止下载与媒体处理…")
             self.cancel_button.configure(state="disabled", text="停止中…")
@@ -659,6 +738,13 @@ class DLForgeApp(ctk.CTk):
             self._log_view.configure(state="normal")
             self._log_view.insert("end", message + "\n")
             self._log_view.see("end")
+            self._log_view.configure(state="disabled")
+
+    def _reset_log(self) -> None:
+        self._log_lines.clear()
+        if self._log_view is not None and self._log_view.winfo_exists():
+            self._log_view.configure(state="normal")
+            self._log_view.delete("1.0", "end")
             self._log_view.configure(state="disabled")
 
     def _on_mousewheel(self, event: tk.Event) -> str:
