@@ -81,7 +81,8 @@ class EngineTests(unittest.TestCase):
 
     def test_windows_gbk_output_preserves_chinese_filename(self):
         message = "已保存：26年9月计算机三级网络技术.mp4"
-        self.assertEqual(decode_subprocess_output(message.encode("gb18030")), message)
+        with mock.patch("dlforge.engine.locale.getpreferredencoding", return_value="gb18030"):
+            self.assertEqual(decode_subprocess_output(message.encode("gb18030")), message)
 
     def test_file_event_tracks_playlist_index(self):
         self.engine._parse_line("DLFORGE_FILE:21|D:/视频/第二十一集.mp4")
