@@ -1,69 +1,155 @@
-# DLForge
+<p align="center">
+  <img src="assets/dlforge-icon.png" alt="DLForge" width="128" height="128">
+</p>
 
-> 现代化 Windows 视频下载器，基于 yt-dlp 与 FFmpeg。
+<h1 align="center">DLForge</h1>
 
-DLForge 是一个面向 Windows 的 yt-dlp 图形界面。发布包会携带 Python 运行时、`yt-dlp`、`ffmpeg` 和 `ffprobe`，目标电脑无需预装 Python 或任何媒体工具。发布版只使用包内组件，不会回退调用用户环境里的 Python 或 yt-dlp。
+<p align="center">
+  <strong>A modern Windows GUI for yt-dlp & FFmpeg</strong><br>
+  Download videos from YouTube, Bilibili, and 1,900+ sites — playlist support, subtitles, dark UI
+</p>
 
-## 本地运行
+<p align="center">
+  <a href="https://github.com/0higgs/DLForge/releases"><img src="https://img.shields.io/github/v/release/0higgs/DLForge?color=7C5CFC&label=Latest" alt="Latest Release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License: MIT"></a>
+  <a href="#"><img src="https://img.shields.io/badge/platform-Windows%2010%2B-7C5CFC" alt="Platform: Windows"></a>
+  <a href="#"><img src="https://img.shields.io/badge/python-no%20install%20needed-brightgreen" alt="No Python needed"></a>
+</p>
+
+<br>
+
+<p align="center">
+  <img src="screenshots/screenshoot1.jpg" alt="DLForge Main Screen" width="800">
+</p>
+
+<p align="center">
+  <img src="screenshots/screenshoot2.jpg" alt="DLForge Download Progress" width="800">
+</p>
+
+---
+
+## Why DLForge?
+
+Most yt-dlp GUIs are web wrappers or Electron apps. DLForge is a **native Windows app** built with CustomTkinter — lightweight, no browser engine, and the target PC needs **zero pre-installed dependencies** (no Python, no yt-dlp, no FFmpeg).
+
+| | Other GUIs | DLForge |
+|---|---|---|
+| 💾 Install size | 150 MB+ (Electron) | ~80 MB |
+| 🐍 Requires Python? | Often yes | **No** — self-contained |
+| 🌙 Dark mode | Usually CSS | **Native Windows dark theme** |
+| 📋 Playlist UX | Single-flat list | **Per-episode selection + retry** |
+| 🎬 Bilibili | Generic titles | **BV API → accurate episode names** |
+| 📦 Offline installer | Rare | **Yes (Inno Setup)** |
+
+---
+
+## Features
+
+- 🔗 **Paste & parse** — single videos, playlists, multi-video collections
+- ✅ **Per-episode selection** — download one, selected, or all episodes
+- 🎬 **Bilibili enhancement** — accurate episode titles via B站 API
+- 📺 **Quality presets** — Best MP4, 1080p, 720p, MP3 audio
+- 🇨🇳🇬🇧 **Subtitle download** — zh-Hans, zh-Hant, English (auto + manual)
+- 📊 **Dual progress bars** — per-episode + overall task progress
+- 🔄 **Retry failed episodes** — partial failures auto-select failed items
+- 📝 **Real-time log** — scrollable yt-dlp output viewer
+- ⚡ **Process tree cancel** — `taskkill /T /F` kills yt-dlp + FFmpeg cleanly
+- 📂 **One-click output** — open download folder instantly
+- 🎨 **Dark card UI** — #080C17 palette, 18px rounded cards, smooth animations
+
+---
+
+## Quick Start
+
+### Option 1: Offline Installer (Recommended)
+
+Download `DLForge-*-Setup-offline.exe` from [Releases](https://github.com/0higgs/DLForge/releases) and run it. Everything is self-contained — no internet needed during install.
+
+### Option 2: Portable ZIP
+
+Download `DLForge-*-win64.zip` from [Releases](https://github.com/0higgs/DLForge/releases), extract, and run `DLForge\DLForge.exe`.
+
+> ⚠️ Do NOT run the EXE directly from PyInstaller's `build` directory. Always use the `dist\DLForge\` folder.
+
+### Option 3: Run from Source
 
 ```powershell
+# 1. Install dependencies
+python -m pip install -r requirements.txt
+
+# 2. Download yt-dlp, ffmpeg, ffprobe
 powershell -ExecutionPolicy Bypass -File .\scripts\prepare_tools.ps1
+
+# 3. Launch
 python .\app.py
 ```
 
-## 构建发布目录
+Requires Python 3.12+ and Windows 10+.
+
+---
+
+## Build
 
 ```powershell
+# Build the PyInstaller package → dist\DLForge\DLForge.exe
 powershell -ExecutionPolicy Bypass -File .\scripts\build.ps1
-```
 
-产物位于 `dist\DLForge\DLForge.exe`。建议发布整个 `dist\DLForge` 目录；下一阶段可再用 Inno Setup 将它制作成带卸载程序和开始菜单快捷方式的安装包。
-
-> 请勿运行 PyInstaller 临时 `build` 目录中的 EXE。构建脚本会在成功后自动清理该目录，用户应解压发布 ZIP 并运行其中 `DLForge\DLForge.exe`。
-
-生成单个 ZIP 发布文件和 SHA-256 校验文件：
-
-```powershell
+# Create ZIP release + SHA-256
 powershell -ExecutionPolicy Bypass -File .\scripts\package.ps1
-```
 
-发布文件位于 `release` 目录。公开分发时须同时提供 `THIRD_PARTY_NOTICES.txt`、`licenses` 目录以及对应的 FFmpeg 源码附件。
-
-## 当前功能
-
-- 链接元数据解析
-- 单视频、合集和分集列表展示，可多选列表项目下载
-- 现代深色卡片界面、视频封面、平滑进度和状态提示动效
-- 固定下载操作栏与左右工作台布局，核心功能始终可见
-- 明确的“仅当前 / 已选分集 / 全部列表”下载范围
-- 针对 Windows 鼠标与触控板优化的分区高速滚动
-- 最佳画质、1080p、720p 与 MP3 预设
-- “仅当前 / 已选分集 / 全部列表”下载范围
-- 中英文字幕下载
-- 进度、速度、剩余时间和任务日志
-- 当前分集与全部任务的双进度显示，并标注已完成集数
-- 播放列表部分失败时自动定位失败分集并提供一键重试
-- 取消任务、打开保存目录
-- Windows 下取消时终止 yt-dlp 与 FFmpeg 整个进程树
-
-请只下载你有权保存的内容，并遵守目标网站服务条款及所在地法律。
-
-## 仓库与二进制说明
-
-本仓库只保存 DLForge 源码、测试和构建脚本，不把 `yt-dlp.exe`、`ffmpeg.exe`、`ffprobe.exe` 或安装包写入 Git 历史。大型二进制通过 GitHub Release 发布。运行 `scripts/prepare_tools.ps1` 会下载固定版本并核验 SHA-256，不会使用会随时间变化的 `latest` 文件。
-
-当前 FFmpeg 来源为 Gyan.dev 的 release essentials 8.1.2 静态构建，该构建启用了 GPLv3。仓库保存 GPLv3 全文、Gyan 原包构建配置与外部库版本清单；每个二进制 Release 都与离线安装器同页提供精确提交 `38b88335f99e76ed89ff3c93f877fdefce736c13` 的 FFmpeg 源码包。详见 [FFmpeg 来源与再分发资料](docs/FFMPEG_SOURCE.md)。DLForge 的 MIT 许可不会取代第三方许可证。
-
-## 构建 Windows 离线安装器
-
-安装 [Inno Setup 6.7 或更高版本](https://jrsoftware.org/isdl.php) 后运行：
-
-```powershell
+# Build offline Inno Setup installer (requires Inno Setup 6.7+)
 powershell -ExecutionPolicy Bypass -File .\scripts\build_installer.ps1
 ```
 
-生成文件为 `release\DLForge-0.5.1-Setup-offline.exe`。安装包内置固定版本的 yt-dlp、FFmpeg 和 ffprobe，并安装到 DLForge 私有目录。目标电脑无需 Python，安装过程无需联网，也不会修改系统 `PATH`。
+Run `python app.py --self-test` to verify that yt-dlp, ffmpeg, and ffprobe are functional in the packaged build.
 
-## License
+---
 
-DLForge 自有源码采用 [MIT License](LICENSE)。第三方组件保留各自许可证，详见 [THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt)。
+## Architecture
+
+```
+┌──────────────┐     ┌────────────────┐     ┌─────────────────┐
+│  dlforge/app │────▶│ queue.Queue()  │────▶│  dlforge/engine │
+│  (GUI/CTk)   │◀────│  80ms poll     │◀────│  (yt-dlp proc)  │
+└──────────────┘     └────────────────┘     └─────────────────┘
+                                                  │
+                    DLFORGE_PROGRESS:             │
+                    DLFORGE_FILE:     ◀───────────┘
+```
+
+Three layers in the `dlforge/` package:
+- **`engine.py`** — Download engine: spawns yt-dlp, parses stdout, emits events
+- **`app.py`** — GUI: CustomTkinter dark card UI, event-driven via `queue.Queue`
+- **`__init__.py`** — Version number `__version__`
+
+All tools (yt-dlp, ffmpeg, ffprobe) are pinned with SHA-256 verification and never use the system PATH in frozen mode.
+
+---
+
+## FAQ
+
+### Is it free?
+Yes. DLForge is MIT-licensed. Third-party components (FFmpeg, yt-dlp) retain their own licenses — see [THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt).
+
+### Does it work on Mac / Linux?
+Not yet. The GUI uses Windows-specific Tcl/Tk packaging. A cross-platform version would need a different UI framework (see the Android port at `D:\Android\DLForge`).
+
+### Where are the binaries?
+This repo only contains source code, tests, and build scripts. Pre-built releases (with yt-dlp + FFmpeg) are on the [Releases](https://github.com/0higgs/DLForge/releases) page. Run `scripts/prepare_tools.ps1` to download the pinned tool versions for local development.
+
+### Is it legal?
+DLForge itself is a download tool. Only download content you have the right to save, and comply with the target site's terms of service and local laws.
+
+---
+
+## Star History
+
+If you find DLForge useful, a ⭐ helps others discover it!
+
+[![Star History Chart](https://api.star-history.com/svg?repos=0higgs/DLForge&type=Date)](https://star-history.com/#0higgs/DLForge&Date)
+
+---
+
+<p align="center">
+  <sub>中文用户请阅读 <a href="README_CN.md">README_CN.md</a></sub>
+</p>
