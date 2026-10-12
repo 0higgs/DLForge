@@ -9,12 +9,12 @@ import tkinter as tk
 import urllib.request
 from pathlib import Path
 from tkinter import filedialog
-from urllib.parse import urlparse
 
 import customtkinter as ctk
 from PIL import Image, ImageOps
 
 from .engine import DownloadEngine, DownloadOptions
+from .links import extract_first_url
 
 
 BG = "#080C17"
@@ -66,11 +66,16 @@ class DLForgeApp(ctk.CTk):
         self._log_view: ctk.CTkTextbox | None = None
         self._retry_items: tuple[int, ...] = ()
         self._task_total = 1
+        self._clipboard_job: str | None = None
+        self._last_clipboard_text: str | None = None
+        self._last_auto_url: str | None = None
+        self._pending_clipboard_url: str | None = None
 
         self._build_ui()
         self.protocol("WM_DELETE_WINDOW", self._on_close)
         self.after(80, self._drain_events)
         self.after(650, self._pulse_status)
+        self._clipboard_job = self.after(600, self._poll_clipboard)
 
     def _set_window_icon(self) -> None:
         icon_path = self.assets_path / "dlforge.ico"
@@ -301,7 +306,13 @@ class DLForgeApp(ctk.CTk):
             options, text="下载中英文字幕", variable=self.subtitles_var,
             progress_color=ACCENT, button_hover_color=ACCENT_HOVER,
             text_color=MUTED, font=("Microsoft YaHei UI", 10),
-        ).pack(side="left")
+        ).pack(anchor="w")
+        self.clipboard_monitor_var = tk.BooleanVar(value=True)
+        ctk.CTkSwitch(
+            options, text="自动识别剪贴板链接", variable=self.clipboard_monitor_var,
+            progress_color=ACCENT, button_hover_color=ACCENT_HOVER,
+            text_color=MUTED, font=("Microsoft YaHei UI", 10),
+        ).pack(anchor="w", pady=(10, 0))
 
     def _build_task_card(self) -> None:
         self.task_card = self._card(self)
@@ -377,15 +388,49 @@ class DLForgeApp(ctk.CTk):
         except tk.TclError:
             self._show_toast("剪贴板里没有可用文本", "warning")
             return
-        self.url_var.set(value)
+        self._last_clipboard_text = value
+        url = extract_first_url(value)
+        if not url:
+            self._show_toast("剪贴板里没有可识别的网页链接", "warning")
+            return
+        self.url_var.set(url)
         self.url_entry.focus_set()
-        if self._valid_url():
-            self.after(120, self._inspect_url)
+        self.after(120, self._inspect_url)
 
     def _valid_url(self) -> str | None:
-        value = self.url_var.get().strip()
-        parsed = urlparse(value)
-        return value if parsed.scheme in {"http", "https"} and parsed.netloc else None
+        url = extract_first_url(self.url_var.get())
+        if url and self.url_var.get().strip() != url:
+            self.url_var.set(url)
+        return url
+
+    def _poll_clipboard(self) -> None:
+        self._clipboard_job = None
+        if self.clipboard_monitor_var.get():
+            if self._pending_clipboard_url and not self._parsing and not self._running:
+                pending = self._pending_clipboard_url
+                self._pending_clipboard_url = None
+                self._accept_clipboard_url(pending)
+
+            try:
+                value = self.clipboard_get().strip()
+            except tk.TclError:
+                value = ""
+
+            if value and value != self._last_clipboard_text:
+                self._last_clipboard_text = value
+                url = extract_first_url(value)
+                if url and url != self._last_auto_url:
+                    if self._parsing or self._running:
+                        self._pending_clipboard_url = url
+                    else:
+                        self._accept_clipboard_url(url)
+        self._clipboard_job = self.after(600, self._poll_clipboard)
+
+    def _accept_clipboard_url(self, url: str) -> None:
+        self._last_auto_url = url
+        self.url_var.set(url)
+        self._show_toast("已识别剪贴板链接，正在自动解析", "success")
+        self.after(120, self._inspect_url)
 
     def _inspect_url(self) -> None:
         url = self._valid_url()
@@ -830,6 +875,12 @@ class DLForgeApp(ctk.CTk):
         os.startfile(destination)
 
     def _on_close(self) -> None:
+        if self._clipboard_job is not None:
+            try:
+                self.after_cancel(self._clipboard_job)
+            except tk.TclError:
+                pass
+            self._clipboard_job = None
         self.engine.cancel()
         self.destroy()
 
@@ -845,3 +896,5 @@ class DLForgeApp(ctk.CTk):
 
 def main() -> None:
     DLForgeApp().mainloop()
+
+

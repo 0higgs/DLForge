@@ -25,6 +25,7 @@ if __name__ == "__main__":
         from dlforge.app import DLForgeApp
 
         test_app = DLForgeApp()
+        test_app.clipboard_monitor_var.set(False)
         test_result = [0]
 
         def exercise_ui() -> None:
@@ -69,3 +70,5 @@ if __name__ == "__main__":
     from dlforge.app import main
 
     main()
+
+
