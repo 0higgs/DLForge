@@ -94,7 +94,7 @@ jobs:
             release/DLForge-${{ env.DLFORGE_VERSION }}-FFmpeg-source-*.zip.sha256
 
       - name: Publish GitHub Release
-        shell: powershell
+        shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
