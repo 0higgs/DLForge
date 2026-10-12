@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.5.2 - 2026-10-12
+
+- Added default-on clipboard monitoring that automatically detects copied HTTP(S)
+  video links and starts inspection while the app is idle.
+- Added robust URL extraction for Bilibili, Douyin, and other platform share text,
+  ignoring surrounding descriptions, instructions, Chinese punctuation, and
+  zero-width characters.
+- Queued newly copied links while inspection or downloading is in progress, then
+  processed them automatically when the app becomes idle.
+- Added a visible switch to turn automatic clipboard recognition on or off.
+- Added regression tests for clipboard polling and mixed-text URL extraction.
+- Updated the release pipeline to publish versioned installers, SHA-256 files,
+  and the corresponding FFmpeg source archive directly to GitHub Releases.
+
 ## v0.5.1 - 2026-08-02
 
 - Added separate live progress bars for the current episode and the complete task.

@@ -2,11 +2,15 @@ $ErrorActionPreference = "Stop"
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $releaseDir = Join-Path $projectRoot "release"
+$versionText = Get-Content -LiteralPath (Join-Path $projectRoot "dlforge\__init__.py") -Raw
+$versionMatch = [regex]::Match($versionText, '__version__\s*=\s*"(?<version>\d+\.\d+\.\d+)"')
+if (-not $versionMatch.Success) { throw "Unable to read DLForge version." }
+$version = $versionMatch.Groups["version"].Value
 $revision = "38b88335f99e76ed89ff3c93f877fdefce736c13"
 $revisionShort = $revision.Substring(0, 10)
 $sourceUrl = "https://github.com/FFmpeg/FFmpeg/archive/$revision.zip"
 $sourceArchiveSha256 = "c3453fbfc7ca25423f4984a83ceda01949d458a8bc04f9d68fab7c392f75b3ab"
-$assetName = "DLForge-0.5.1-FFmpeg-source-$revisionShort.zip"
+$assetName = "DLForge-$version-FFmpeg-source-$revisionShort.zip"
 $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("dlforge-ffmpeg-source-" + [guid]::NewGuid().ToString("N"))
 
 New-Item -ItemType Directory -Force -Path $tempRoot | Out-Null
@@ -26,7 +30,7 @@ try {
     $sourceRoot = Get-ChildItem -LiteralPath $expanded -Directory | Select-Object -First 1
     if (-not $sourceRoot) { throw "Downloaded FFmpeg source archive is empty." }
 
-    $packageRoot = Join-Path $tempRoot "DLForge-0.5.1-FFmpeg-source-$revisionShort"
+    $packageRoot = Join-Path $tempRoot "DLForge-$version-FFmpeg-source-$revisionShort"
     Move-Item -LiteralPath $sourceRoot.FullName -Destination $packageRoot
     $distributionInfo = Join-Path $packageRoot "DLForge-distribution-info"
     New-Item -ItemType Directory -Force -Path $distributionInfo | Out-Null

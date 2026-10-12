@@ -7,6 +7,15 @@ $ErrorActionPreference = "Stop"
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $installerScript = Join-Path $projectRoot "installer\DLForge.iss"
+$versionText = Get-Content -LiteralPath (Join-Path $projectRoot "dlforge\__init__.py") -Raw
+$versionMatch = [regex]::Match($versionText, '__version__\s*=\s*"(?<version>\d+\.\d+\.\d+)"')
+if (-not $versionMatch.Success) { throw "Unable to read DLForge version." }
+$version = $versionMatch.Groups["version"].Value
+$installerText = Get-Content -LiteralPath $installerScript -Raw
+$installerVersionMatch = [regex]::Match($installerText, '#define\s+MyAppVersion\s+"(?<version>\d+\.\d+\.\d+)"')
+if (-not $installerVersionMatch.Success -or $installerVersionMatch.Groups["version"].Value -ne $version) {
+    throw "Application and installer versions do not match."
+}
 $isccCandidates = @()
 $isccOnPath = Get-Command ISCC.exe -ErrorAction SilentlyContinue
 if ($isccOnPath) { $isccCandidates += $isccOnPath.Source }
@@ -43,8 +52,8 @@ if ($UseDefaultSetupIcon) { $compilerArgs += "/DUseDefaultSetupIcon" }
 & $iscc @compilerArgs $installerScript
 if ($LASTEXITCODE -ne 0) { throw "Inno Setup compilation failed." }
 
-$setup = Join-Path $projectRoot "release\DLForge-0.5.1-Setup-offline.exe"
-$compiledSetup = Join-Path $compilerOutputDir "DLForge-0.5.1-Setup-offline.exe"
+$setup = Join-Path $projectRoot "release\DLForge-$version-Setup-offline.exe"
+$compiledSetup = Join-Path $compilerOutputDir "DLForge-$version-Setup-offline.exe"
 if (-not (Test-Path -LiteralPath $compiledSetup)) { throw "Installer output was not created: $compiledSetup" }
 New-Item -ItemType Directory -Path (Split-Path -Parent $setup) -Force | Out-Null
 Copy-Item -LiteralPath $compiledSetup -Destination $setup -Force
