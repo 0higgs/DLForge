@@ -21,6 +21,7 @@ class ClipboardPollingTests(unittest.TestCase):
             _pending_clipboard_url=None,
             _parsing=False,
             _running=False,
+            _updating_core=False,
             _last_clipboard_text=None,
             _last_auto_url=None,
             clipboard_get=mock.Mock(return_value=clipboard_text),

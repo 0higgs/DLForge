@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.5.3 - 2026-11-23
+
+- Added automatic background checks for new stable yt-dlp releases.
+- Added an in-app confirmation prompt and a manual core update check.
+- Downloaded updates are restricted to the official yt-dlp GitHub repository,
+  verified against the official SHA2-256SUMS file, self-tested, and installed
+  with an atomic replacement.
+- Core replacement is blocked while parsing or downloading, and the previous
+  executable remains untouched whenever verification or installation fails.
+- Updated the installer-bundled yt-dlp core from 2026.07.04 to 2026.10.26.
+- Added regression tests for version comparison, trusted release assets, checksum
+  parsing, successful replacement, and rollback-safe checksum failures.
+
 ## v0.5.2 - 2026-10-12
 
 - Added default-on clipboard monitoring that automatically detects copied HTTP(S)

@@ -15,6 +15,7 @@ from PIL import Image, ImageOps
 
 from .engine import DownloadEngine, DownloadOptions
 from .links import extract_first_url
+from .updater import YtDlpRelease, YtDlpUpdater
 
 
 BG = "#080C17"
@@ -32,7 +33,7 @@ DANGER = "#FF647C"
 
 
 class DLForgeApp(ctk.CTk):
-    def __init__(self) -> None:
+    def __init__(self, check_updates: bool = True) -> None:
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
         super().__init__()
@@ -50,6 +51,7 @@ class DLForgeApp(ctk.CTk):
 
         self.events: queue.Queue[dict] = queue.Queue()
         self.engine = DownloadEngine(self.events.put)
+        self.updater = YtDlpUpdater(self.events.put)
         self.last_file: Path | None = None
         self.selected_vars: dict[int, tk.BooleanVar] = {}
         self._thumbnail_image: ctk.CTkImage | None = None
@@ -70,12 +72,20 @@ class DLForgeApp(ctk.CTk):
         self._last_clipboard_text: str | None = None
         self._last_auto_url: str | None = None
         self._pending_clipboard_url: str | None = None
+        self._core_update_dialog: ctk.CTkToplevel | None = None
+        self._core_update_button: ctk.CTkButton | None = None
+        self._pending_core_update: dict | None = None
+        self._updating_core = False
+        bundled_ytdlp = Path(__file__).resolve().parents[1] / "tools" / "yt-dlp.exe"
+        self._updates_supported = bool(getattr(sys, "frozen", False) or bundled_ytdlp.exists())
 
         self._build_ui()
         self.protocol("WM_DELETE_WINDOW", self._on_close)
         self.after(80, self._drain_events)
         self.after(650, self._pulse_status)
         self._clipboard_job = self.after(600, self._poll_clipboard)
+        if check_updates and self._updates_supported:
+            self.after(1800, self.updater.check_async)
 
     def _set_window_icon(self) -> None:
         icon_path = self.assets_path / "dlforge.ico"
@@ -313,6 +323,19 @@ class DLForgeApp(ctk.CTk):
             progress_color=ACCENT, button_hover_color=ACCENT_HOVER,
             text_color=MUTED, font=("Microsoft YaHei UI", 10),
         ).pack(anchor="w", pady=(10, 0))
+        update_row = ctk.CTkFrame(options, fg_color="transparent")
+        update_row.pack(fill="x", pady=(12, 0))
+        ctk.CTkLabel(
+            update_row, text="yt-dlp 核心自动更新", text_color=MUTED,
+            font=("Microsoft YaHei UI", 10),
+        ).pack(side="left")
+        self.core_update_check_button = ctk.CTkButton(
+            update_row, text="检查更新", width=78, height=28, corner_radius=9,
+            fg_color=SURFACE_3, hover_color="#24314B", text_color=TEXT,
+            font=("Microsoft YaHei UI", 9), command=lambda: self._check_core_update(True),
+            state="normal" if self._updates_supported else "disabled",
+        )
+        self.core_update_check_button.pack(side="right")
 
     def _build_task_card(self) -> None:
         self.task_card = self._card(self)
@@ -406,7 +429,7 @@ class DLForgeApp(ctk.CTk):
     def _poll_clipboard(self) -> None:
         self._clipboard_job = None
         if self.clipboard_monitor_var.get():
-            if self._pending_clipboard_url and not self._parsing and not self._running:
+            if self._pending_clipboard_url and not self._parsing and not self._running and not self._updating_core:
                 pending = self._pending_clipboard_url
                 self._pending_clipboard_url = None
                 self._accept_clipboard_url(pending)
@@ -420,7 +443,7 @@ class DLForgeApp(ctk.CTk):
                 self._last_clipboard_text = value
                 url = extract_first_url(value)
                 if url and url != self._last_auto_url:
-                    if self._parsing or self._running:
+                    if self._parsing or self._running or self._updating_core:
                         self._pending_clipboard_url = url
                     else:
                         self._accept_clipboard_url(url)
@@ -432,7 +455,104 @@ class DLForgeApp(ctk.CTk):
         self._show_toast("已识别剪贴板链接，正在自动解析", "success")
         self.after(120, self._inspect_url)
 
+    def _check_core_update(self, manual: bool = False) -> None:
+        if not self._updates_supported:
+            self._show_toast("自动更新仅支持安装版或内置工具目录", "warning")
+            return
+        if not self.updater.check_async(manual=manual):
+            self._show_toast("核心更新任务正在进行中", "warning")
+            return
+        if manual:
+            self.core_update_check_button.configure(state="disabled", text="检查中…")
+
+    def _maybe_show_pending_core_update(self) -> None:
+        event = self._pending_core_update
+        if not event or self._parsing or self._running or self._updating_core:
+            return
+        if self._core_update_dialog is not None and self._core_update_dialog.winfo_exists():
+            self._core_update_dialog.lift()
+            return
+        self._show_core_update_dialog(event)
+
+    def _show_core_update_dialog(self, event: dict) -> None:
+        release: YtDlpRelease = event["release"]
+        dialog = ctk.CTkToplevel(self)
+        dialog.title("更新 yt-dlp 核心")
+        dialog.geometry("470x300")
+        dialog.resizable(False, False)
+        dialog.configure(fg_color=BG)
+        dialog.transient(self)
+        dialog.protocol("WM_DELETE_WINDOW", self._dismiss_core_update)
+        self._core_update_dialog = dialog
+
+        card = self._card(dialog)
+        card.pack(fill="both", expand=True, padx=18, pady=18)
+        ctk.CTkLabel(
+            card, text="发现新的 yt-dlp 核心", text_color=TEXT,
+            font=("Microsoft YaHei UI", 18, "bold"),
+        ).pack(anchor="w", padx=24, pady=(24, 8))
+        ctk.CTkLabel(
+            card,
+            text=f'当前版本：{event["current"]}\n最新版本：{event["latest"]}',
+            text_color=ACCENT_HOVER, font=("Cascadia Mono", 11),
+            justify="left",
+        ).pack(anchor="w", padx=24)
+        ctk.CTkLabel(
+            card,
+            text="更新文件来自 yt-dlp 官方 GitHub Release。DLForge 会先校验官方 SHA-256，"
+                 "再进行新核心自检并原子替换；若失败，原核心不会被覆盖。",
+            text_color=MUTED, font=("Microsoft YaHei UI", 10),
+            justify="left", wraplength=400,
+        ).pack(anchor="w", padx=24, pady=(14, 18))
+        actions = ctk.CTkFrame(card, fg_color="transparent")
+        actions.pack(fill="x", padx=24, pady=(0, 22))
+        ctk.CTkButton(
+            actions, text="稍后提醒", width=105, height=40, corner_radius=11,
+            fg_color=SURFACE_3, hover_color="#24314B", text_color=TEXT,
+            command=self._dismiss_core_update,
+        ).pack(side="left")
+        self._core_update_button = ctk.CTkButton(
+            actions, text="立即更新", width=130, height=40, corner_radius=11,
+            fg_color=ACCENT, hover_color=ACCENT_HOVER, text_color="white",
+            font=("Microsoft YaHei UI", 10, "bold"),
+            command=lambda: self._install_core_update(release),
+        )
+        self._core_update_button.pack(side="right")
+        dialog.after(80, dialog.lift)
+
+    def _dismiss_core_update(self) -> None:
+        if self._updating_core:
+            self._show_toast("核心正在更新，请等待完成", "warning")
+            return
+        self._pending_core_update = None
+        self._close_core_update_dialog()
+
+    def _close_core_update_dialog(self) -> None:
+        dialog = self._core_update_dialog
+        self._core_update_dialog = None
+        self._core_update_button = None
+        if dialog is not None and dialog.winfo_exists():
+            dialog.destroy()
+
+    def _install_core_update(self, release: YtDlpRelease) -> None:
+        if self._parsing or self._running:
+            self._show_toast("请等待当前任务结束后再更新核心", "warning")
+            return
+        if not self.updater.install_async(release):
+            self._show_toast("核心更新任务正在进行中", "warning")
+            return
+        self._updating_core = True
+        self.inspect_button.configure(state="disabled")
+        self.download_button.configure(state="disabled")
+        self.core_update_check_button.configure(state="disabled", text="更新中…")
+        self.header_status.configure(text="  ●  UPDATING  ", text_color=WARNING)
+        if self._core_update_button is not None and self._core_update_button.winfo_exists():
+            self._core_update_button.configure(state="disabled", text="校验并更新中…")
+
     def _inspect_url(self) -> None:
+        if self._updating_core:
+            self._show_toast("yt-dlp 核心正在更新，请稍候", "warning")
+            return
         url = self._valid_url()
         if not url:
             self._show_toast("请输入以 http:// 或 https:// 开头的有效链接", "error")
@@ -447,6 +567,9 @@ class DLForgeApp(ctk.CTk):
             self.output_var.set(chosen)
 
     def _start_download(self) -> None:
+        if self._updating_core:
+            self._show_toast("yt-dlp 核心正在更新，请稍候", "warning")
+            return
         url = self._valid_url()
         if not url:
             self._show_toast("请先输入并解析有效链接", "error")
@@ -502,6 +625,8 @@ class DLForgeApp(ctk.CTk):
             text="  ●  WORKING  " if running else "  ●  READY  ",
             text_color=ACCENT_HOVER if running else SUCCESS,
         )
+        if not running:
+            self.after(120, self._maybe_show_pending_core_update)
 
     def _drain_events(self) -> None:
         try:
@@ -513,7 +638,41 @@ class DLForgeApp(ctk.CTk):
 
     def _handle_event(self, event: dict) -> None:
         kind = event["type"]
-        if kind == "inspect_started":
+        if kind == "core_update_available":
+            self.core_update_check_button.configure(state="normal", text="检查更新")
+            self._pending_core_update = event
+            if self._parsing or self._running:
+                self._show_toast("发现 yt-dlp 更新，将在当前任务结束后提醒", "warning")
+            self._maybe_show_pending_core_update()
+        elif kind == "core_update_current":
+            self.core_update_check_button.configure(state="normal", text="检查更新")
+            self._show_toast(f'yt-dlp {event["version"]} 已是最新版', "success")
+        elif kind == "core_update_check_error":
+            self.core_update_check_button.configure(state="normal", text="检查更新")
+            self._show_toast(f'检查更新失败：{event["message"]}', "warning")
+        elif kind == "core_update_started":
+            self.status_var.set(f'正在安全更新 yt-dlp 至 {event["version"]}…')
+        elif kind == "core_update_installed":
+            self._updating_core = False
+            self._pending_core_update = None
+            self._close_core_update_dialog()
+            self.inspect_button.configure(state="normal")
+            self.download_button.configure(state="normal")
+            self.core_update_check_button.configure(state="normal", text="检查更新")
+            self.status_var.set(f'yt-dlp 核心已更新至 {event["version"]}')
+            self.header_status.configure(text="  ●  READY  ", text_color=SUCCESS)
+            self._show_toast(f'yt-dlp 核心已更新至 {event["version"]}', "success")
+        elif kind == "core_update_error":
+            self._updating_core = False
+            self.inspect_button.configure(state="normal")
+            self.download_button.configure(state="normal")
+            self.core_update_check_button.configure(state="normal", text="检查更新")
+            self.header_status.configure(text="  ●  READY  ", text_color=SUCCESS)
+            if self._core_update_button is not None and self._core_update_button.winfo_exists():
+                self._core_update_button.configure(state="normal", text="重新更新")
+            self.status_var.set("核心更新失败，原 yt-dlp 已保留")
+            self._show_toast(f'核心更新失败：{event["message"]}', "error")
+        elif kind == "inspect_started":
             self._parsing = True
             self._parse_frame = 0
             self.meta_badge.configure(text="  正在解析  ", text_color=ACCENT_HOVER)
@@ -536,6 +695,7 @@ class DLForgeApp(ctk.CTk):
             if event.get("thumbnail"):
                 self._load_thumbnail_async(event["thumbnail"])
             self._show_toast("视频信息解析完成", "success")
+            self.after(120, self._maybe_show_pending_core_update)
         elif kind == "thumbnail_bytes":
             self._apply_thumbnail(event["data"])
         elif kind == "started":
@@ -609,6 +769,7 @@ class DLForgeApp(ctk.CTk):
             self.meta_detail.set(event["message"])
             self._show_entries([])
             self._show_toast(event["message"], "error")
+            self.after(120, self._maybe_show_pending_core_update)
         elif kind == "error":
             self.status_var.set("任务失败，请展开日志查看详情")
             self._append_log(event["message"])
@@ -875,6 +1036,9 @@ class DLForgeApp(ctk.CTk):
         os.startfile(destination)
 
     def _on_close(self) -> None:
+        if self._updating_core:
+            self._show_toast("核心正在更新，请等待完成后再退出", "warning")
+            return
         if self._clipboard_job is not None:
             try:
                 self.after_cancel(self._clipboard_job)
