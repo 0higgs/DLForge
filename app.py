@@ -4,15 +4,21 @@ import sys
 
 if __name__ == "__main__":
     if "--self-test" in sys.argv:
-        from dlforge.engine import tool_path
+        from dlforge.engine import subprocess_environment, tool_path
 
-        components = (("yt-dlp", "--version"), ("ffmpeg", "-version"), ("ffprobe", "-version"))
+        components = (
+            ("yt-dlp", "--version"),
+            ("deno", "--version"),
+            ("ffmpeg", "-version"),
+            ("ffprobe", "-version"),
+        )
         for component, version_arg in components:
             result = subprocess.run(
                 [tool_path(component), version_arg],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
                 creationflags=subprocess.CREATE_NO_WINDOW,
+                env=subprocess_environment(),
                 check=False,
             )
             if result.returncode != 0:

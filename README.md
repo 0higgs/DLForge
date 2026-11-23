@@ -30,11 +30,11 @@
 
 ## Why DLForge?
 
-Most yt-dlp GUIs are web wrappers or Electron apps. DLForge is a **native Windows app** built with CustomTkinter — lightweight, no browser engine, and the target PC needs **zero pre-installed dependencies** (no Python, no yt-dlp, no FFmpeg).
+Most yt-dlp GUIs are web wrappers or Electron apps. DLForge is a **native Windows app** built with CustomTkinter — lightweight, no browser engine, and the target PC needs **zero pre-installed dependencies** (no Python, yt-dlp, Deno, or FFmpeg).
 
 | | Other GUIs | DLForge |
 |---|---|---|
-| 💾 Install size | 150 MB+ (Electron) | ~80 MB |
+| 💾 Install size | 150 MB+ (Electron) | ~130 MB |
 | 🐍 Requires Python? | Often yes | **No** — self-contained |
 | 🌙 Dark mode | Usually CSS | **Native Windows dark theme** |
 | 📋 Playlist UX | Single-flat list | **Per-episode selection + retry** |
@@ -47,6 +47,7 @@ Most yt-dlp GUIs are web wrappers or Electron apps. DLForge is a **native Window
 
 - 🔗 **Clipboard auto-detection** — recognizes links inside platform share text and ignores surrounding descriptions
 - 🔄 **Automatic yt-dlp core updates** — official release checks, SHA-256 verification, and safe atomic replacement
+- ▶️ **Full YouTube extraction** — bundled Deno runtime for yt-dlp's JavaScript challenges
 - 📋 **Paste & parse** — single videos, playlists, multi-video collections
 - ✅ **Per-episode selection** — download one, selected, or all episodes
 - 🎬 **Bilibili enhancement** — accurate episode titles via B站 API
@@ -79,7 +80,7 @@ Download `DLForge-*-win64.zip` from [Releases](https://github.com/0higgs/DLForge
 # 1. Install dependencies
 python -m pip install -r requirements.txt
 
-# 2. Download yt-dlp, ffmpeg, ffprobe
+# 2. Download yt-dlp, Deno, ffmpeg, ffprobe
 powershell -ExecutionPolicy Bypass -File .\scripts\prepare_tools.ps1
 
 # 3. Launch
@@ -103,7 +104,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\package.ps1
 powershell -ExecutionPolicy Bypass -File .\scripts\build_installer.ps1
 ```
 
-Run `python app.py --self-test` to verify that yt-dlp, ffmpeg, and ffprobe are functional in the packaged build.
+Run `python app.py --self-test` to verify that yt-dlp, Deno, ffmpeg, and ffprobe are functional in the packaged build.
 
 ---
 
@@ -124,7 +125,7 @@ Three layers in the `dlforge/` package:
 - **`app.py`** — GUI: CustomTkinter dark card UI, event-driven via `queue.Queue`
 - **`__init__.py`** — Version number `__version__`
 
-All tools (yt-dlp, ffmpeg, ffprobe) are pinned with SHA-256 verification and never use the system PATH in frozen mode.
+All tools (yt-dlp, Deno, ffmpeg, ffprobe) are pinned with SHA-256 verification and run in an isolated environment that never falls back to the system PATH in frozen mode.
 
 ---
 
@@ -137,7 +138,7 @@ Yes. DLForge is MIT-licensed. Third-party components (FFmpeg, yt-dlp) retain the
 Not yet. The GUI uses Windows-specific Tcl/Tk packaging. A cross-platform version would need a different UI framework (see the Android port at `D:\Android\DLForge`).
 
 ### Where are the binaries?
-This repo only contains source code, tests, and build scripts. Pre-built releases (with yt-dlp + FFmpeg) are on the [Releases](https://github.com/0higgs/DLForge/releases) page. Run `scripts/prepare_tools.ps1` to download the pinned tool versions for local development.
+This repo only contains source code, tests, and build scripts. Pre-built releases (with yt-dlp + Deno + FFmpeg) are on the [Releases](https://github.com/0higgs/DLForge/releases) page. Run `scripts/prepare_tools.ps1` to download the pinned tool versions for local development.
 
 ### Is it legal?
 DLForge itself is a download tool. Only download content you have the right to save, and comply with the target site's terms of service and local laws.

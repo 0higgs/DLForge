@@ -52,14 +52,48 @@ def app_root() -> Path:
     return Path(__file__).resolve().parents[1]
 
 
-def tool_path(name: str) -> str:
+def _bundled_tool_candidates(name: str) -> list[Path]:
     suffix = ".exe" if os.name == "nt" else ""
     candidates = [app_root() / "tools" / f"{name}{suffix}"]
     if getattr(sys, "frozen", False):
-        # The online installer keeps downloaded tools beside DLForge.exe instead
-        # of embedding them in PyInstaller's private runtime directory.
+        # The installer keeps updateable tools beside DLForge.exe instead of
+        # inside PyInstaller's private runtime directory.
         candidates.insert(0, Path(sys.executable).resolve().parent / "tools" / f"{name}{suffix}")
-    for bundled in candidates:
+    return candidates
+
+
+def subprocess_environment() -> dict[str, str]:
+    """Return an isolated environment for bundled media tools.
+
+    A downloaded Windows executable may be subject to redirection-trust
+    mitigation.  Traversing a Microsoft Store or other untrusted junction on
+    the user's PATH can then raise WinError 448 before yt-dlp even reaches the
+    supplied URL.  Frozen builds need only their private tools and Windows
+    system directories, so never expose the user's PATH to their subprocesses.
+    """
+    environment = os.environ.copy()
+    if getattr(sys, "frozen", False):
+        roots = [candidate.parent for candidate in _bundled_tool_candidates("yt-dlp")]
+        if os.name == "nt":
+            windows = Path(environment.get("SystemRoot") or r"C:\Windows")
+            roots.extend((windows / "System32", windows, windows / "System32" / "Wbem"))
+        paths: list[str] = []
+        seen: set[str] = set()
+        for root in roots:
+            value = str(root)
+            key = os.path.normcase(value)
+            if key not in seen:
+                seen.add(key)
+                paths.append(value)
+        environment["PATH"] = os.pathsep.join(paths)
+        environment.pop("PYTHONHOME", None)
+        environment.pop("PYTHONPATH", None)
+    return environment
+
+
+def tool_path(name: str) -> str:
+    suffix = ".exe" if os.name == "nt" else ""
+    for bundled in _bundled_tool_candidates(name):
         if bundled.exists():
             return str(bundled)
     if getattr(sys, "frozen", False):
@@ -96,6 +130,10 @@ class DownloadEngine:
         try:
             command = [
                 tool_path("yt-dlp"),
+                "--ignore-config",
+                "--no-js-runtimes",
+                "--js-runtimes",
+                f"deno:{tool_path('deno')}",
                 "--dump-single-json",
                 "--no-warnings",
                 "--flat-playlist",
@@ -105,6 +143,7 @@ class DownloadEngine:
                 command,
                 capture_output=True,
                 startupinfo=_startupinfo(),
+                env=subprocess_environment(),
                 timeout=45,
             )
             if result.returncode != 0:
@@ -137,6 +176,7 @@ class DownloadEngine:
                 bufsize=0,
                 startupinfo=_startupinfo(),
                 creationflags=creationflags,
+                env=subprocess_environment(),
             )
             with self._lock:
                 self._process = process
@@ -178,6 +218,10 @@ class DownloadEngine:
         ffmpeg = tool_path("ffmpeg")
         command = [
             tool_path("yt-dlp"),
+            "--ignore-config",
+            "--no-js-runtimes",
+            "--js-runtimes",
+            f"deno:{tool_path('deno')}",
             "--newline",
             "--windows-filenames",
             "--no-color",

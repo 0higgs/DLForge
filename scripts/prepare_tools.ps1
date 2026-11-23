@@ -5,6 +5,8 @@ $toolsDir = Join-Path $projectRoot "tools"
 $tempDir = Join-Path ([System.IO.Path]::GetTempPath()) ("dlforge-tools-" + [guid]::NewGuid().ToString("N"))
 $ytDlpVersion = "2026.10.26"
 $ytDlpSha256 = "f5389d3698ecde4ef06f4e6b1ce0294fe9ac1396228c8990b8d3416d6d177a7d"
+$denoVersion = "v2.9.8"
+$denoArchiveSha256 = "cba84b26e0df5ae7f74fc66b86a95b866872a86292ebd84fa1e959927edd93bf"
 $ffmpegVersion = "8.1.2"
 $ffmpegArchiveSha256 = "db580001caa24ac104c8cb856cd113a87b0a443f7bdf47d8c12b1d740584a2ec"
 $ffmpegExeSha256 = "1326dde4c84ff1f96fe6b8916c5bed29e163e9b5dccf995f6f3db069d143ec5e"
@@ -26,6 +28,17 @@ try {
         throw "Failed to download the standalone yt-dlp executable."
     }
     Assert-Sha256 $ytDlpTarget $ytDlpSha256
+    $denoArchive = Join-Path $tempDir "deno.zip"
+    & curl.exe -fL --retry 3 --connect-timeout 20 "https://github.com/denoland/deno/releases/download/$denoVersion/deno-x86_64-pc-windows-msvc.zip" -o $denoArchive
+    if ($LASTEXITCODE -ne 0 -or (Get-Item -LiteralPath $denoArchive).Length -lt 1MB) {
+        throw "Failed to download the Deno archive."
+    }
+    Assert-Sha256 $denoArchive $denoArchiveSha256
+    $denoExtract = Join-Path $tempDir "deno"
+    Expand-Archive -LiteralPath $denoArchive -DestinationPath $denoExtract -Force
+    $deno = Join-Path $denoExtract "deno.exe"
+    if (-not (Test-Path -LiteralPath $deno)) { throw "Deno archive does not contain deno.exe." }
+    Copy-Item -LiteralPath $deno -Destination (Join-Path $toolsDir "deno.exe") -Force
     $archive = Join-Path $tempDir "ffmpeg.zip"
     & curl.exe -fL --retry 3 --connect-timeout 20 "https://github.com/GyanD/codexffmpeg/releases/download/$ffmpegVersion/ffmpeg-$ffmpegVersion-essentials_build.zip" -o $archive
     if ($LASTEXITCODE -ne 0 -or (Get-Item -LiteralPath $archive).Length -lt 1MB) {
@@ -40,7 +53,7 @@ try {
     Copy-Item -LiteralPath $ffprobe.FullName -Destination (Join-Path $toolsDir "ffprobe.exe") -Force
     Assert-Sha256 (Join-Path $toolsDir "ffmpeg.exe") $ffmpegExeSha256
     Assert-Sha256 (Join-Path $toolsDir "ffprobe.exe") $ffprobeExeSha256
-    Write-Host "Prepared yt-dlp, ffmpeg and ffprobe in $toolsDir"
+    Write-Host "Prepared yt-dlp, Deno, ffmpeg and ffprobe in $toolsDir"
 }
 finally {
     if (Test-Path -LiteralPath $tempDir) { Remove-Item -LiteralPath $tempDir -Recurse -Force }

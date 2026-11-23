@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Callable
 from urllib.parse import urlparse
 
-from .engine import tool_path
+from .engine import subprocess_environment, tool_path
 
 
 RELEASE_API = "https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest"
@@ -101,6 +101,7 @@ def read_ytdlp_version(executable: str | Path) -> str:
         errors="replace",
         timeout=15,
         creationflags=creationflags,
+        env=subprocess_environment(),
         check=False,
     )
     if result.returncode != 0:

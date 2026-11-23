@@ -105,17 +105,15 @@ jobs:
           if ($source.Count -ne 1 -or $sourceHash.Count -ne 1) { throw "Unable to resolve FFmpeg release assets." }
           $notesPath = Join-Path $env:RUNNER_TEMP "dlforge-release-notes.md"
           @(
-            "本次更新新增安全的 yt-dlp 内核自动更新：",
+            "本次更新修复 Windows 解析失败并补齐 YouTube 所需运行环境：",
             "",
-            "- 启动后在后台检查 yt-dlp 官方稳定版，发现新版本时提醒用户",
-            "- 设置区提供手动检查更新入口",
-            "- 只从 yt-dlp 官方 GitHub Release 下载更新",
-            "- 使用官方 SHA-256 校验并执行新核心自检",
-            "- 解析或下载任务进行中不会替换核心",
-            "- 更新失败时保留原有核心，不影响现有下载功能",
-            "- 安装包内置的 yt-dlp 已升级至 2026.10.26",
+            "- 修复系统 PATH 含 Microsoft Store Python 等不受信任装入点时的 WinError 448",
+            "- 解析和下载子进程不再继承用户 PATH 或外部 Python 环境",
+            "- 内置并固定 Deno 2.9.8，显式提供给 yt-dlp 处理 YouTube JavaScript 挑战",
+            "- Deno 官方压缩包经过固定 SHA-256 校验，并随包附带 MIT 许可证",
+            "- 保留 v0.5.3 的 yt-dlp 官方稳定版自动检查与安全更新功能",
             "",
-            "安装包为完全离线版本，内置 Python 运行时、yt-dlp、FFmpeg 和 ffprobe，目标电脑无需配置环境。"
+            "安装包为完全离线版本，内置 Python 运行时、yt-dlp、Deno、FFmpeg 和 ffprobe，目标电脑无需配置环境。"
           ) | Set-Content -LiteralPath $notesPath -Encoding utf8
           $assets = @($installer, $installerHash, $source[0].FullName, $sourceHash[0].FullName)
           & gh release create $env:DLFORGE_TAG @assets --repo $env:GITHUB_REPOSITORY --target $env:GITHUB_SHA --title "DLForge $env:DLFORGE_TAG" --notes-file $notesPath --latest

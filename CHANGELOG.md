@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.5.4 - 2026-11-23
+
+- Fixed Windows `WinError 448` during parsing when the user's `PATH` contains a
+  Microsoft Store or other untrusted junction.
+- Isolated packaged yt-dlp and FFmpeg processes from external Python and user
+  `PATH` entries so the installed app remains self-contained.
+- Bundled the pinned Deno 2.9.8 runtime and passed its absolute path to yt-dlp,
+  enabling the JavaScript challenge solver required for full YouTube support.
+- Added SHA-256 verification and MIT license material for the bundled Deno
+  archive.
+- Added regression tests for subprocess isolation and explicit Deno selection.
+
 ## v0.5.3 - 2026-11-23
 
 - Added automatic background checks for new stable yt-dlp releases.

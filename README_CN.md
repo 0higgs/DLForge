@@ -30,11 +30,11 @@
 
 ## 为什么选 DLForge？
 
-大多数 yt-dlp GUI 是网页套壳或 Electron 应用。DLForge 是一个**原生 Windows 应用**，基于 CustomTkinter 构建 — 轻量、无浏览器引擎，目标电脑**无需预装任何依赖**（无需 Python、无需 yt-dlp、无需 FFmpeg）。
+大多数 yt-dlp GUI 是网页套壳或 Electron 应用。DLForge 是一个**原生 Windows 应用**，基于 CustomTkinter 构建 — 轻量、无浏览器引擎，目标电脑**无需预装任何依赖**（无需 Python、yt-dlp、Deno 或 FFmpeg）。
 
 | | 其他 GUI | DLForge |
 |---|---|---|
-| 💾 安装体积 | 150 MB+ (Electron) | ~80 MB |
+| 💾 安装体积 | 150 MB+ (Electron) | ~130 MB |
 | 🐍 需要 Python？ | 通常需要 | **不需要** — 开箱即用 |
 | 🌙 深色模式 | 通常是 CSS 模拟 | **原生 Windows 深色主题** |
 | 📋 播放列表体验 | 单一扁平列表 | **逐集勾选 + 失败重试** |
@@ -47,6 +47,7 @@
 
 - 🔗 **剪贴板自动识别** — 自动提取平台分享文案中的链接并忽略前后描述
 - 🔄 **yt-dlp 内核自动更新** — 检查官方正式版、校验 SHA-256 并安全原子替换
+- ▶️ **完整 YouTube 解析** — 内置 Deno，自动处理 yt-dlp 所需的 JavaScript 挑战
 - 📋 **粘贴即解析** — 支持单视频、合集、播放列表
 - ✅ **逐集选择** — 可下载当前、已选分集或全部列表
 - 🎬 **Bilibili 增强** — 通过 B站 API 获取准确分P信息
@@ -67,7 +68,7 @@
 
 从 [Releases](https://github.com/0higgs/DLForge/releases) 下载 `DLForge-*-Setup-offline.exe`，双击运行即可。安装包内置所有组件，安装过程无需联网。
 
-安装器会将 yt-dlp、FFmpeg、ffprobe 安装到 DLForge 私有目录，不修改系统 `PATH`。
+安装器会将 yt-dlp、Deno、FFmpeg、ffprobe 安装到 DLForge 私有目录，不修改或依赖系统 `PATH`。
 
 ### 方式二：便携版 ZIP
 
@@ -81,7 +82,7 @@
 # 1. 安装依赖
 python -m pip install -r requirements.txt
 
-# 2. 下载固定版本的 yt-dlp、ffmpeg、ffprobe（带 SHA-256 校验）
+# 2. 下载固定版本的 yt-dlp、Deno、ffmpeg、ffprobe（带 SHA-256 校验）
 powershell -ExecutionPolicy Bypass -File .\scripts\prepare_tools.ps1
 
 # 3. 启动
@@ -105,7 +106,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\package.ps1
 powershell -ExecutionPolicy Bypass -File .\scripts\build_installer.ps1
 ```
 
-构建后运行 `python app.py --self-test` 可验证 yt-dlp、ffmpeg、ffprobe 在发布包中是否正常工作。
+构建后运行 `python app.py --self-test` 可验证 yt-dlp、Deno、ffmpeg、ffprobe 在发布包中是否正常工作。
 
 ---
 
@@ -126,13 +127,13 @@ powershell -ExecutionPolicy Bypass -File .\scripts\build_installer.ps1
 - **`app.py`** — GUI：CustomTkinter 深色卡片界面，通过 `queue.Queue` 事件驱动
 - **`__init__.py`** — 版本号 `__version__`
 
-所有工具（yt-dlp、ffmpeg、ffprobe）均通过 SHA-256 校验固定版本，frozen 模式下绝不回退到系统 PATH。
+所有工具（yt-dlp、Deno、ffmpeg、ffprobe）均通过 SHA-256 校验固定版本，frozen 模式下使用隔离环境，绝不回退到系统 PATH。
 
 ---
 
 ## 仓库说明
 
-本仓库仅保存源码、测试和构建脚本。`yt-dlp.exe`、`ffmpeg.exe`、`ffprobe.exe` 及安装包不进入 Git 历史，通过 [GitHub Releases](https://github.com/0higgs/DLForge/releases) 发布。
+本仓库仅保存源码、测试和构建脚本。`yt-dlp.exe`、`deno.exe`、`ffmpeg.exe`、`ffprobe.exe` 及安装包不进入 Git 历史，通过 [GitHub Releases](https://github.com/0higgs/DLForge/releases) 发布。
 
 当前 FFmpeg 来源为 Gyan.dev 的 release essentials 8.1.2 静态构建（GPLv3）。仓库保留 GPLv3 全文、Gyan 原包构建配置与外部库版本清单；每个 Release 均附带精确提交的 FFmpeg 源码包。详见 [FFmpeg 来源与再分发资料](docs/FFMPEG_SOURCE.md)。
 
@@ -147,7 +148,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\build_installer.ps1
 目前不支持。GUI 使用了 Windows 特化的 Tcl/Tk 打包方案。跨平台版本需要不同的 UI 框架（Android 移植版正在开发中）。
 
 ### 二进制文件在哪？
-本仓库只含源码。预构建的发布包（含 yt-dlp + FFmpeg）在 [Releases](https://github.com/0higgs/DLForge/releases) 页面。本地开发运行 `scripts/prepare_tools.ps1` 即可下载固定版本的依赖工具。
+本仓库只含源码。预构建的发布包（含 yt-dlp + Deno + FFmpeg）在 [Releases](https://github.com/0higgs/DLForge/releases) 页面。本地开发运行 `scripts/prepare_tools.ps1` 即可下载固定版本的依赖工具。
 
 ### 使用合法吗？
 DLForge 本身是下载工具。请只下载你有权保存的内容，并遵守目标网站的服务条款及所在地法律。

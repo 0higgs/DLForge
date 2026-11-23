@@ -6,7 +6,13 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from dlforge.engine import DownloadEngine, DownloadOptions, decode_subprocess_output, tool_path
+from dlforge.engine import (
+    DownloadEngine,
+    DownloadOptions,
+    decode_subprocess_output,
+    subprocess_environment,
+    tool_path,
+)
 
 
 class EngineTests(unittest.TestCase):
@@ -45,6 +51,41 @@ class EngineTests(unittest.TestCase):
                 mock.patch("dlforge.engine.app_root", return_value=install_root / "_internal"),
             ):
                 self.assertTrue(os.path.samefile(tool_path("yt-dlp"), executable))
+
+    def test_frozen_subprocess_environment_does_not_inherit_user_path(self):
+        with tempfile.TemporaryDirectory() as directory:
+            install_root = Path(directory)
+            with (
+                mock.patch.object(sys, "frozen", True, create=True),
+                mock.patch.object(sys, "executable", str(install_root / "DLForge.exe")),
+                mock.patch("dlforge.engine.app_root", return_value=install_root / "_internal"),
+                mock.patch.dict(
+                    os.environ,
+                    {
+                        "PATH": r"C:\untrusted-junction;C:\Users\someone\AppData\Local\Packages\Python\Scripts",
+                        "SystemRoot": r"C:\Windows",
+                        "PYTHONHOME": r"C:\external-python",
+                        "PYTHONPATH": r"C:\external-packages",
+                    },
+                    clear=True,
+                ),
+            ):
+                environment = subprocess_environment()
+        self.assertNotIn("untrusted-junction", environment["PATH"])
+        self.assertNotIn(r"Packages\Python\Scripts", environment["PATH"])
+        self.assertIn(os.path.normcase(str(install_root / "tools")), os.path.normcase(environment["PATH"]))
+        self.assertNotIn("PYTHONHOME", environment)
+        self.assertNotIn("PYTHONPATH", environment)
+
+    def test_ytdlp_commands_use_private_deno_runtime(self):
+        with mock.patch("dlforge.engine.tool_path", side_effect=lambda name: f"C:/tools/{name}.exe"):
+            command = self.engine._build_command(
+                DownloadOptions("https://example.com/video", Path("out"), "best")
+            )
+        self.assertIn("--ignore-config", command)
+        self.assertIn("--no-js-runtimes", command)
+        runtime_position = command.index("--js-runtimes")
+        self.assertEqual(command[runtime_position + 1], "deno:C:/tools/deno.exe")
 
     @unittest.skipUnless(sys.platform == "win32", "Windows process-tree behavior")
     def test_cancel_terminates_the_whole_process_tree(self):
