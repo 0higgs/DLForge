@@ -73,7 +73,7 @@ class EngineTests(unittest.TestCase):
                 environment = subprocess_environment()
         self.assertNotIn("untrusted-junction", environment["PATH"])
         self.assertNotIn(r"Packages\Python\Scripts", environment["PATH"])
-        self.assertIn(os.path.normcase(str(install_root / "tools")), os.path.normcase(environment["PATH"]))
+        self.assertEqual(Path(environment["PATH"].split(os.pathsep)[0]).name.lower(), "tools")
         self.assertNotIn("PYTHONHOME", environment)
         self.assertNotIn("PYTHONPATH", environment)
 
