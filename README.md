@@ -46,6 +46,7 @@ Most yt-dlp GUIs are web wrappers or Electron apps. DLForge is a **native Window
 ## Features
 
 - 🔗 **Clipboard auto-detection** — recognizes links inside platform share text and ignores surrounding descriptions
+- 🔄 **Automatic yt-dlp core updates** — official release checks, SHA-256 verification, and safe atomic replacement
 - 📋 **Paste & parse** — single videos, playlists, multi-video collections
 - ✅ **Per-episode selection** — download one, selected, or all episodes
 - 🎬 **Bilibili enhancement** — accurate episode titles via B站 API
