@@ -6,7 +6,7 @@ $ErrorActionPreference = "Stop"
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $toolsDir = Join-Path $projectRoot "tools"
-$required = @("yt-dlp.exe", "ffmpeg.exe", "ffprobe.exe")
+$required = @("yt-dlp.exe", "deno.exe", "ffmpeg.exe", "ffprobe.exe")
 if (-not $WithoutTools) {
     foreach ($name in $required) {
         if (-not (Test-Path -LiteralPath (Join-Path $toolsDir $name))) {
@@ -33,12 +33,12 @@ if ($LASTEXITCODE -ne 0) {
     python -m pip install -r (Join-Path $projectRoot "requirements-dev.txt")
     if ($LASTEXITCODE -ne 0) { throw "Failed to install PyInstaller." }
 }
-python -c "import customtkinter, PIL" 2>$null
+python -c "import importlib.util, sys; sys.exit(0 if all(importlib.util.find_spec(name) for name in ('customtkinter', 'PIL')) else 1)" 2>$null
 if ($LASTEXITCODE -ne 0) {
     python -m pip install -r (Join-Path $projectRoot "requirements.txt")
     if ($LASTEXITCODE -ne 0) { throw "Failed to install GUI dependencies." }
 }
-$customTkRoot = python -c "import customtkinter, pathlib; print(pathlib.Path(customtkinter.__file__).resolve().parent)"
+$customTkRoot = python -c "import importlib.util, pathlib; print(pathlib.Path(importlib.util.find_spec('customtkinter').origin).resolve().parent)"
 if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $customTkRoot)) {
     throw "Cannot locate CustomTkinter package data."
 }

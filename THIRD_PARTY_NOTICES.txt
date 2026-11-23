@@ -6,6 +6,15 @@ yt-dlp
   License: The Unlicense
   DLForge invokes the unmodified standalone executable as a separate process.
 
+Deno
+  Project: https://github.com/denoland/deno
+  Bundled version: 2.9.8
+  Binary release: https://github.com/denoland/deno/releases/tag/v2.9.8
+  Windows x64 archive SHA-256: cba84b26e0df5ae7f74fc66b86a95b866872a86292ebd84fa1e959927edd93bf
+  License: MIT License (licenses/Deno-MIT.txt)
+  DLForge invokes the unmodified runtime as a separate process so yt-dlp can
+  solve JavaScript challenges required for full YouTube support.
+
 FFmpeg / ffprobe
   Project: https://ffmpeg.org/
   Windows build: https://www.gyan.dev/ffmpeg/builds/
